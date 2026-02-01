@@ -1,8 +1,8 @@
-- 👋 Hi, I’m @krc17
-- 👀 I’m interested in tech, micro computers, dnd, football and filmmaking
-- 🌱 I’m currently learning python scripting and studying cybersecurity. 
-- 💞️ I’m looking to collaborate on raspbery pi builds uses. Python tips. Cybersec CTF.
-- 📫 How to reach me los#2614 on discord
+- 👋 Hi, I’m Kevin. This is my Git.
+- 👀 I’m interested in homelabbing with Proxmox - filtering and catching traffic, serving media, and hosting game emulation. Also random Pi projects.
+- 🌱 I’m currently learning python scripting homelabbing and SIEM analysis and incident response. 
+- 💞️ I’m looking to collaborate on Pi projects, testing lab functionality. Just throwing things at a wall and seeing what sounds right :)
+- 📫 Reach me los#2614 on Discord
 
 <!---
 krc17/krc17 is a ✨ special ✨ repository because its `README.md` (this file) appears on your GitHub profile.

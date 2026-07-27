@@ -1,0 +1,921 @@
+/* =========================================================================
+   Engineering Team Dashboard — wall display stylesheet
+
+   Built for one context: a large touchscreen TV in a lit room, read from
+   3–5 metres. That drives every decision here — a committed dark theme (no
+   light mode; a white wall panel is a lamp pointed at the room), type sized
+   in viewport units so it scales with the panel, and touch targets no
+   smaller than 44px. Colours come from the validated data-viz dark palette.
+   ========================================================================= */
+
+:root {
+  color-scheme: dark;
+
+  /* Surfaces & ink */
+  --plane: #0d0d0d;
+  --surface-1: #1a1a19;
+  --surface-2: #222221;
+  --surface-3: #2c2c2a;
+  --ink: #ffffff;
+  --ink-2: #c3c2b7;
+  --muted: #898781;
+  --hairline: rgba(255, 255, 255, 0.10);
+  --baseline: #383835;
+
+  /* Categorical slots (dark steps) */
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-6: #008300;
+  --series-7: #9085e9;
+  --series-8: #e66767;
+
+  /* Status — reserved, never reused as a series colour */
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #d03b3b;
+
+  /* Sequential blue ramp, for progress meters */
+  --seq-400: #3987e5;
+  --seq-600: #184f95;
+  --seq-700: #0d366b;
+
+  --radius: 14px;
+  --radius-sm: 8px;
+  --gap: clamp(10px, 0.85vw, 20px);
+  --pad: clamp(12px, 1vw, 24px);
+
+  --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --chalk-font: "Segoe Print", "Bradley Hand", "Comic Sans MS", var(--font);
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html {
+  /* Everything downstream is in rem, so the whole wall scales with the panel. */
+  font-size: clamp(14px, 0.83vw, 24px);
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;             /* a wall display never scrolls as a page */
+  background: var(--plane);
+  color: var(--ink);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Kiosk hygiene: no accidental text selection or long-press menus on a TV. */
+body {
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+/* =========================================================================
+   Wall layout
+   ========================================================================= */
+.wall {
+  display: grid;
+  height: 100vh;
+  height: 100dvh;
+  padding: var(--gap);
+  gap: var(--gap);
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1.15fr) minmax(0, 0.82fr);
+  grid-template-rows: minmax(0, 1.12fr) minmax(0, 0.95fr) minmax(0, 0.93fr) auto;
+  grid-template-areas:
+    "board     board    agenda"
+    "takeaways updates  agenda"
+    "projects  projects projects"
+    "ticker    ticker   ticker";
+}
+
+.panel--board    { grid-area: board; }
+.panel--agenda   { grid-area: agenda; }
+#panel-takeaways { grid-area: takeaways; }
+#panel-updates   { grid-area: updates; }
+.panel--projects { grid-area: projects; }
+.ticker          { grid-area: ticker; }
+
+/* Portrait / narrow: stack into a single column and let the wall scroll. */
+@media (max-aspect-ratio: 1/1) {
+  html, body { overflow: auto; }
+  .wall {
+    height: auto;
+    min-height: 100dvh;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-template-areas:
+      "board" "agenda" "takeaways" "updates" "projects" "ticker";
+  }
+  .panel--board { min-height: 48vh; }
+  .panel { min-height: 30vh; }
+}
+
+/* =========================================================================
+   Panel shell
+   ========================================================================= */
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: var(--pad);
+  gap: 0.6rem;
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+}
+
+.panel__head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  flex: none;
+}
+
+.panel__title {
+  margin: 0;
+  font-size: 1.12rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.panel__title--inline {
+  margin-top: 0.35rem;
+  font-size: 0.92rem;
+  color: var(--ink-2);
+}
+
+.panel__controls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+.panel__foot {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: none;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--hairline);
+  font-size: 0.8rem;
+  color: var(--muted);
+  min-height: 1.9rem;
+}
+
+.panel__foot:empty { display: none; }
+
+/* Tap ⤢ to bring a panel full-screen for a closer look, tap again to return. */
+.panel.is-expanded {
+  position: fixed;
+  inset: var(--gap);
+  z-index: 60;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.75);
+}
+
+/* =========================================================================
+   Controls
+   ========================================================================= */
+.tool,
+.swatch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;          /* ≥44px at base scale — finger and stylus safe */
+  padding: 0 0.7rem;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.tool:hover { background: var(--surface-3); color: var(--ink); }
+.tool:active { transform: translateY(1px); }
+
+.tool.is-active,
+.tool[aria-pressed="true"] {
+  color: var(--ink);
+  background: var(--surface-3);
+  border-color: var(--series-1);
+}
+
+.tool--icon { padding: 0; font-size: 1.15rem; line-height: 1; }
+.tool--danger:hover { border-color: var(--status-critical); color: #fff; }
+
+.tool--size .dot {
+  width: var(--dot);
+  height: var(--dot);
+  border-radius: 50%;
+  background: var(--ink-2);
+}
+
+.tool-group {
+  display: flex;
+  gap: 0.3rem;
+  padding: 0.25rem;
+  background: var(--plane);
+  border-radius: 10px;
+}
+
+.swatch {
+  min-width: 2.75rem;
+  padding: 0;
+  background: var(--swatch);
+  border: 2px solid transparent;
+}
+
+.swatch.is-active {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 2px var(--plane) inset;
+}
+
+:where(.tool, .swatch):focus-visible {
+  outline: 2px solid var(--series-1);
+  outline-offset: 2px;
+}
+
+/* =========================================================================
+   Blackboard
+   ========================================================================= */
+.board-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.board-surface {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background-color: #12211c;    /* slate-green board, not pure black */
+  background-image:
+    radial-gradient(circle at 22% 28%, rgba(255, 255, 255, 0.05), transparent 55%),
+    radial-gradient(circle at 78% 72%, rgba(255, 255, 255, 0.04), transparent 50%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.55);
+}
+
+#board-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;           /* required: we handle pointer events ourselves */
+  cursor: crosshair;
+}
+
+.board-hint {
+  position: absolute;
+  inset: auto 0 42% 0;
+  margin: 0;
+  text-align: center;
+  font-family: var(--chalk-font);
+  font-size: 1.6rem;
+  color: rgba(244, 244, 239, 0.22);
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+
+.board-hint[hidden] { display: none; }
+
+.save-state { color: var(--muted); }
+.save-state[data-state="saving"] { color: var(--status-warning); }
+.save-state[data-state="error"] { color: var(--status-critical); }
+
+/* =========================================================================
+   Clock, calendar, agenda
+   ========================================================================= */
+.clock { flex: none; }
+
+.clock__time {
+  margin: 0;
+  font-size: clamp(2.6rem, 4.6vw, 4.4rem);
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.clock__meta {
+  margin: 0.35rem 0 0;
+  font-size: 0.92rem;
+  color: var(--ink-2);
+}
+
+.calendar {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin: 0.85rem 0 0.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.calendar__dow {
+  padding: 0.2rem 0;
+  text-align: center;
+  font-size: 0.68rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.calendar__day {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: var(--ink-2);
+}
+
+.calendar__day--muted { color: #4b4a47; }
+
+.calendar__day--today {
+  font-weight: 700;
+  color: var(--plane);
+  background: var(--series-1);
+}
+
+/* A dot marks days with events — never colour alone; the agenda lists them. */
+.calendar__day--has-events::after {
+  content: "";
+  position: absolute;
+  bottom: 3px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--series-4);
+}
+
+.calendar__day--today.calendar__day--has-events::after { background: var(--plane); }
+
+.agenda {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.agenda__item {
+  display: grid;
+  grid-template-columns: 4.6rem 1fr;
+  gap: 0.6rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.agenda__item:last-child { border-bottom: 0; }
+
+.agenda__when {
+  font-size: 0.82rem;
+  font-weight: 650;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.agenda__day {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.agenda__title {
+  font-size: 0.88rem;
+  color: var(--ink-2);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.agenda__where {
+  display: block;
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+.agenda__item--now .agenda__when { color: var(--status-good); }
+.agenda__item--now .agenda__title { color: var(--ink); font-weight: 600; }
+
+/* =========================================================================
+   Document panels (takeaways & updates)
+   ========================================================================= */
+/* Content taller than its panel fades out at the bottom rather than being cut
+   off mid-line, so "there is more below" reads as deliberate from across the room. */
+.scroll-fade {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 2.2rem), transparent);
+}
+
+.doc-viewport {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.35rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-3) transparent;
+}
+
+.doc-viewport::-webkit-scrollbar { width: 8px; }
+.doc-viewport::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 4px; }
+
+.doc__title {
+  margin: 0 0 0.15rem;
+  font-size: 1.28rem;
+  font-weight: 650;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.doc__meta {
+  margin: 0 0 0.7rem;
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+.doc__heading {
+  margin: 0.9rem 0 0.35rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--series-1);
+}
+
+.doc__heading:first-child { margin-top: 0; }
+
+.doc__para {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.doc__list {
+  margin: 0 0 0.6rem;
+  padding-left: 1.1rem;
+  list-style: none;
+}
+
+.doc__bullet {
+  position: relative;
+  margin-bottom: 0.4rem;
+  font-size: 1rem;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.doc__bullet::before {
+  content: "";
+  position: absolute;
+  left: -0.95rem;
+  top: 0.6em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--series-3);
+}
+
+.doc__table {
+  width: 100%;
+  margin: 0.4rem 0 0.8rem;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.doc__table td {
+  padding: 0.35rem 0.6rem;
+  border-bottom: 1px solid var(--hairline);
+  color: var(--ink-2);
+  vertical-align: top;
+}
+
+.doc__table tr:first-child td {
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.pager {
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+  padding: 1rem 0;
+  color: var(--muted);
+}
+
+.empty__headline {
+  margin: 0 0 0.3rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.empty__hint {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.empty__path {
+  display: inline-block;
+  margin-top: 0.4rem;
+  padding: 0.15rem 0.4rem;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.78rem;
+  color: var(--ink-2);
+  background: var(--plane);
+  border-radius: 5px;
+}
+
+/* =========================================================================
+   Project tracking — Kanban
+   ========================================================================= */
+.stat-row {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.8rem, 1.6vw, 2rem);
+  margin-left: clamp(0.8rem, 2vw, 2.5rem);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.stat__value {
+  font-size: 1.32rem;
+  font-weight: 650;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.stat__label {
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.stat--alert .stat__value { color: var(--status-critical); }
+.stat--warn .stat__value { color: var(--status-warning); }
+
+.board-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.kanban {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: var(--gap);
+  height: 100%;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--plane);
+  border-radius: 10px;
+  padding: 0.55rem;
+}
+
+.column__head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: none;
+  padding: 0 0.15rem 0.5rem;
+}
+
+.column__name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.column__count {
+  padding: 0.05rem 0.42rem;
+  font-size: 0.72rem;
+  font-weight: 650;
+  color: var(--muted);
+  background: var(--surface-2);
+  border-radius: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.column__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  overflow-y: auto;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-3) transparent;
+}
+
+.column__cards::-webkit-scrollbar { width: 6px; }
+.column__cards::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 3px; }
+
+.column__empty {
+  padding: 0.6rem 0.3rem;
+  font-size: 0.76rem;
+  color: #4b4a47;
+}
+
+.card {
+  position: relative;
+  padding: 0.6rem 0.65rem 0.55rem;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-left: 3px solid var(--card-accent, var(--muted));
+  border-radius: var(--radius-sm);
+}
+
+.card__top {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+}
+
+.card__id {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.card__title {
+  margin: 0 0 0.35rem;
+  font-size: 0.94rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ink);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.card__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+.card__owner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--ink-2);
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--plane);
+  background: var(--avatar, var(--series-1));
+  border-radius: 50%;
+}
+
+/* Health chip: icon + word + colour, so it never depends on hue alone. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  border-radius: 5px;
+  background: var(--surface-3);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.chip__icon { font-size: 0.72rem; line-height: 1; }
+
+.chip--on-track  { color: var(--status-good); }
+.chip--at-risk   { color: var(--status-warning); }
+.chip--off-track { color: var(--status-critical); }
+.chip--done      { color: var(--muted); }
+
+.chip--priority-critical { color: var(--status-critical); }
+.chip--priority-high { color: var(--status-serious); }
+
+.card__due { font-variant-numeric: tabular-nums; }
+.card__due--soon { color: var(--status-warning); }
+.card__due--overdue { color: var(--status-critical); font-weight: 650; }
+
+/* Meter: fill = sequential blue; track = a darker step of the same ramp. */
+.meter {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.45rem;
+}
+
+.meter__track {
+  position: relative;
+  flex: 1 1 auto;
+  height: 6px;
+  background: var(--seq-700);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.meter__fill {
+  height: 100%;
+  background: var(--meter-fill, var(--seq-400));
+  border-radius: 0 3px 3px 0;   /* square at the baseline, rounded data-end */
+  transition: width 400ms ease;
+}
+
+.meter__value {
+  font-size: 0.7rem;
+  font-weight: 650;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  min-width: 2.4rem;
+  text-align: right;
+}
+
+.card__milestone {
+  margin-top: 0.35rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card__blocker {
+  margin-top: 0.35rem;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.72rem;
+  color: var(--status-critical);
+  background: rgba(208, 59, 59, 0.12);
+  border-radius: 5px;
+}
+
+.tags { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+
+.tag {
+  padding: 0.05rem 0.35rem;
+  font-size: 0.66rem;
+  color: var(--muted);
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+}
+
+/* =========================================================================
+   News ticker
+   ========================================================================= */
+.ticker {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  height: clamp(2.6rem, 3.4vh, 3.6rem);
+  padding: 0 var(--pad);
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.ticker__label {
+  flex: none;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--plane);
+  background: var(--series-2);
+  border-radius: 5px;
+}
+
+.ticker__viewport {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  /* Fade the headlines in and out at the edges rather than hard-cutting them. */
+  mask-image: linear-gradient(90deg, transparent, #000 2%, #000 97%, transparent);
+}
+
+.ticker__track {
+  display: inline-flex;
+  align-items: center;
+  gap: 2.6rem;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.ticker__item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--ink-2);
+}
+
+.ticker__source {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.ticker__sep { color: var(--surface-3); }
+
+.ticker__status {
+  flex: none;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.ticker__status[data-state="stale"] { color: var(--status-warning); }
+
+/* =========================================================================
+   Connection state
+   ========================================================================= */
+.link-state {
+  position: fixed;
+  right: var(--gap);
+  bottom: calc(var(--gap) + 3.6rem);
+  z-index: 80;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--plane);
+  background: var(--status-warning);
+  border-radius: 20px;
+}
+
+.link-state[hidden] { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

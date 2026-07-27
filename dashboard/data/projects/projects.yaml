@@ -1,0 +1,127 @@
+
+# ============================================================================
+# Project Tracking board
+#
+# Edit this file and the wall repaints within about a second — no restart.
+# You can also split projects across several .yaml/.json files in this folder;
+# they all merge into one board.
+#
+# Required per project: title
+# Everything else is optional and falls back to something sensible.
+#
+#   status      Backlog | In Progress | Blocked | In Review | Done
+#               (free text also works: "wip", "qa", "on hold", "shipped"…)
+#   owner       shown as initials + name on the card
+#   progress    0-100. Omit it and progress is derived from milestones,
+#               or from the column if there are none.
+#   due         YYYY-MM-DD. Drives the "3d left" / "overdue" badge.
+#   health      on-track | at-risk | off-track. Omit it and health is derived
+#               from the due date and progress.
+#   priority    critical | high | medium | low  (p0/p1/p2/p3 also accepted)
+#   milestones  the first unfinished one shows on the card as "Next: …"
+# ============================================================================
+
+board:
+  name: Engineering Delivery
+  columns:
+    - Backlog
+    - In Progress
+    - Blocked
+    - In Review
+    - Done
+
+projects:
+  - id: INF-114
+    title: Proxmox cluster HA failover
+    summary: Three-node quorum with replicated storage for the lab services.
+    owner: Kevin Caughman
+    status: In Progress
+    priority: high
+    progress: 65
+    due: 2026-08-14
+    tags: [infra, proxmox]
+    milestones:
+      - name: Corosync ring on dedicated VLAN
+        due: 2026-07-18
+        done: true
+      - name: ZFS replication every 15 min
+        due: 2026-08-01
+        done: true
+      - name: Live migration smoke test
+        due: 2026-08-14
+        done: false
+
+  - id: SEC-042
+    title: SIEM ingest for edge firewall logs
+    summary: Normalise pfSense + Suricata events into the detection pipeline.
+    owner: Dana Whitfield
+    status: In Progress
+    priority: critical
+    progress: 40
+    due: 2026-08-05
+    health: at-risk
+    tags: [security, siem]
+    milestones:
+      - name: Syslog forwarder hardened
+        done: true
+      - name: Suricata EVE parser
+        done: false
+      - name: First detection rule live
+        done: false
+
+  - id: NET-207
+    title: VLAN segmentation for guest traffic
+    owner: Marcus Reyes
+    status: Blocked
+    priority: high
+    progress: 30
+    due: 2026-07-31
+    blocked_by: switch firmware RMA
+    tags: [network]
+
+  - id: OPS-088
+    title: Nightly offsite backup verification
+    summary: Restore-test one random VM per night and report the result.
+    owner: Priya Nadkarni
+    status: In Review
+    progress: 90
+    due: 2026-07-30
+    tags: [ops, backup]
+    milestones:
+      - name: Restore harness scripted
+        done: true
+      - name: Report to team channel
+        done: true
+      - name: Runbook reviewed
+        done: false
+
+  - id: PI-019
+    title: Lab sensor mesh on Pi Zero W
+    owner: Kevin Caughman
+    status: Backlog
+    priority: low
+    due: 2026-09-19
+    tags: [hardware, pi]
+
+  - id: OBS-031
+    title: Grafana dashboards for host metrics
+    owner: Dana Whitfield
+    status: Backlog
+    priority: medium
+    tags: [observability]
+
+  - id: INF-097
+    title: Media server migration to NVMe pool
+    owner: Marcus Reyes
+    status: Done
+    progress: 100
+    due: 2026-07-11
+    tags: [infra, storage]
+
+  - id: SEC-036
+    title: MFA rollout for admin consoles
+    owner: Priya Nadkarni
+    status: Done
+    progress: 100
+    due: 2026-07-03
+    tags: [security]

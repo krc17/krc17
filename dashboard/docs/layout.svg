@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" width="960" height="560" role="img" aria-label="Dashboard layout: blackboard top left, clock and calendar down the right, meeting takeaways and team updates in the middle row, project tracking board across the bottom, news ticker along the foot.">
+  <style>
+    .plane { fill: #0d0d0d; }
+    .panel { fill: #1a1a19; stroke: rgba(255,255,255,0.10); stroke-width: 1; rx: 10; }
+    .title { fill: #ffffff; font: 600 15px system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: 0.04em; }
+    .sub   { fill: #898781; font: 400 12px system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .accent{ fill: #3987e5; }
+  </style>
+
+  <rect class="plane" x="0" y="0" width="960" height="560" rx="12"/>
+
+  <!-- Blackboard -->
+  <rect class="panel" x="16" y="16" width="596" height="230"/>
+  <rect x="32" y="56" width="564" height="174" fill="#12211c" rx="6"/>
+  <path d="M70 170 q40 -50 80 0 t80 0 t80 -30" stroke="#f4f4ef" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M330 120 h150" stroke="#3987e5" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <text class="title" x="32" y="42">BLACKBOARD</text>
+  <text class="sub" x="470" y="42">write with the touch pen</text>
+
+  <!-- Agenda column -->
+  <rect class="panel" x="624" y="16" width="320" height="404"/>
+  <text x="640" y="72" fill="#ffffff" font="300 42px system-ui" font-size="42" font-weight="300" font-family="system-ui, sans-serif">10:24 AM</text>
+  <text class="sub" x="640" y="94">Monday, July 27 · EDT</text>
+  <g fill="#2c2c2a">
+    <rect x="640" y="112" width="288" height="120" rx="6"/>
+  </g>
+  <rect x="700" y="160" width="26" height="26" rx="5" class="accent"/>
+  <text class="sub" x="640" y="256">MONTH CALENDAR</text>
+  <text class="title" x="640" y="292" font-size="13">UP NEXT</text>
+  <g class="sub">
+    <text x="640" y="318">2:00 PM   Architecture review</text>
+    <text x="640" y="344">9:30 AM   Weekly engineering sync</text>
+    <text x="640" y="370">1:00 PM   Vendor call</text>
+  </g>
+
+  <!-- Document panels -->
+  <rect class="panel" x="16" y="258" width="290" height="162"/>
+  <text class="title" x="32" y="284" font-size="12">TEAM MEETING TAKEAWAYS</text>
+  <text class="sub" x="32" y="308">from data\meeting-takeaways</text>
+  <g fill="#c3c2b7">
+    <rect x="32" y="324" width="180" height="7" rx="3"/>
+    <rect x="32" y="342" width="240" height="7" rx="3"/>
+    <rect x="32" y="360" width="150" height="7" rx="3"/>
+    <rect x="32" y="378" width="210" height="7" rx="3"/>
+  </g>
+
+  <rect class="panel" x="322" y="258" width="290" height="162"/>
+  <text class="title" x="338" y="284" font-size="12">TEAM UPDATES</text>
+  <text class="sub" x="338" y="308">from data\team-updates</text>
+  <g fill="#c3c2b7">
+    <rect x="338" y="324" width="200" height="7" rx="3"/>
+    <rect x="338" y="342" width="160" height="7" rx="3"/>
+    <rect x="338" y="360" width="230" height="7" rx="3"/>
+    <rect x="338" y="378" width="140" height="7" rx="3"/>
+  </g>
+
+  <!-- Project board -->
+  <rect class="panel" x="16" y="432" width="928" height="88"/>
+  <text class="title" x="32" y="456" font-size="12">PROJECT TRACKING</text>
+  <text class="sub" x="180" y="456">Kanban board from data\projects\projects.yaml</text>
+  <g>
+    <rect x="32" y="466" width="172" height="42" rx="6" fill="#0d0d0d"/>
+    <rect x="216" y="466" width="172" height="42" rx="6" fill="#0d0d0d"/>
+    <rect x="400" y="466" width="172" height="42" rx="6" fill="#0d0d0d"/>
+    <rect x="584" y="466" width="172" height="42" rx="6" fill="#0d0d0d"/>
+    <rect x="768" y="466" width="160" height="42" rx="6" fill="#0d0d0d"/>
+  </g>
+  <g>
+    <rect x="40" y="474" width="156" height="26" rx="4" fill="#222221"/>
+    <rect x="40" y="474" width="3" height="26" fill="#898781"/>
+    <rect x="224" y="474" width="156" height="26" rx="4" fill="#222221"/>
+    <rect x="224" y="474" width="3" height="26" fill="#3987e5"/>
+    <rect x="408" y="474" width="156" height="26" rx="4" fill="#222221"/>
+    <rect x="408" y="474" width="3" height="26" fill="#d03b3b"/>
+    <rect x="592" y="474" width="156" height="26" rx="4" fill="#222221"/>
+    <rect x="592" y="474" width="3" height="26" fill="#9085e9"/>
+    <rect x="776" y="474" width="144" height="26" rx="4" fill="#222221"/>
+    <rect x="776" y="474" width="3" height="26" fill="#199e70"/>
+  </g>
+  <g class="sub" font-size="9">
+    <text x="52" y="491">BACKLOG</text>
+    <text x="236" y="491">IN PROGRESS</text>
+    <text x="420" y="491">BLOCKED</text>
+    <text x="604" y="491">IN REVIEW</text>
+    <text x="788" y="491">DONE</text>
+  </g>
+
+  <!-- Ticker -->
+  <rect class="panel" x="16" y="530" width="928" height="26"/>
+  <rect x="28" y="536" width="44" height="14" rx="3" fill="#d95926"/>
+  <text x="34" y="546" fill="#0d0d0d" font-size="8" font-weight="700" font-family="system-ui, sans-serif">WORLD</text>
+  <text class="sub" x="86" y="547" font-size="10">scrolling world-news headlines, refreshed every 10 minutes</text>
+</svg>

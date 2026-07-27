@@ -1,0 +1,21 @@
+# Local environment
+.venv/
+__pycache__/
+*.pyc
+
+# Real configuration — may contain a secret calendar ICS link.
+# Commit dashboard.env.example instead.
+dashboard.env
+
+# Runtime state
+dashboard.log
+dashboard.log.err
+.dashboard.pid
+data/blackboard/board.json
+
+# Team content: keep the folders, ignore what gets dropped in them.
+# Delete these rules if you'd rather version the team's documents.
+data/meeting-takeaways/*
+data/team-updates/*
+!data/meeting-takeaways/*.md
+!data/team-updates/*.md

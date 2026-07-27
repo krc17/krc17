@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <title>Engineering Team Dashboard</title>
+  <link rel="stylesheet" href="/css/dashboard.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>📋</text></svg>" />
+</head>
+<body>
+  <div class="wall" id="wall">
+
+    <!-- ── Blackboard ─────────────────────────────────────────────── -->
+    <section class="panel panel--board" id="panel-board" aria-labelledby="board-title">
+      <header class="panel__head">
+        <h2 class="panel__title" id="board-title">Blackboard</h2>
+        <div class="board-tools" id="board-tools">
+          <div class="tool-group" role="radiogroup" aria-label="Chalk colour">
+            <button class="swatch is-active" data-color="#f4f4ef" style="--swatch:#f4f4ef" role="radio" aria-checked="true" aria-label="White chalk"></button>
+            <button class="swatch" data-color="#3987e5" style="--swatch:#3987e5" role="radio" aria-checked="false" aria-label="Blue chalk"></button>
+            <button class="swatch" data-color="#199e70" style="--swatch:#199e70" role="radio" aria-checked="false" aria-label="Green chalk"></button>
+            <button class="swatch" data-color="#c98500" style="--swatch:#c98500" role="radio" aria-checked="false" aria-label="Amber chalk"></button>
+            <button class="swatch" data-color="#e66767" style="--swatch:#e66767" role="radio" aria-checked="false" aria-label="Red chalk"></button>
+          </div>
+          <div class="tool-group" role="radiogroup" aria-label="Stroke width">
+            <button class="tool tool--size is-active" data-width="4" role="radio" aria-checked="true" aria-label="Thin">
+              <span class="dot" style="--dot:6px"></span>
+            </button>
+            <button class="tool tool--size" data-width="10" role="radio" aria-checked="false" aria-label="Medium">
+              <span class="dot" style="--dot:12px"></span>
+            </button>
+            <button class="tool tool--size" data-width="20" role="radio" aria-checked="false" aria-label="Thick">
+              <span class="dot" style="--dot:20px"></span>
+            </button>
+          </div>
+          <div class="tool-group">
+            <button class="tool" data-action="eraser" aria-pressed="false" title="Eraser">Eraser</button>
+            <button class="tool" data-action="undo" title="Undo last stroke">Undo</button>
+            <button class="tool tool--danger" data-action="clear" title="Wipe the board">Clear</button>
+          </div>
+        </div>
+      </header>
+      <div class="board-surface" id="board-surface">
+        <canvas id="board-canvas" aria-label="Shared blackboard. Draw with a stylus or finger."></canvas>
+        <p class="board-hint" id="board-hint">Write here with the touch pen</p>
+      </div>
+      <footer class="panel__foot">
+        <span class="save-state" id="board-save-state" aria-live="polite">Saved</span>
+      </footer>
+    </section>
+
+    <!-- ── Time, calendar, agenda ─────────────────────────────────── -->
+    <aside class="panel panel--agenda" id="panel-agenda" aria-labelledby="agenda-title">
+      <div class="clock">
+        <p class="clock__time" id="clock-time">--:--</p>
+        <p class="clock__meta"><span id="clock-day">—</span> · <span id="clock-zone">—</span></p>
+      </div>
+      <div class="calendar" id="calendar" aria-label="Month calendar"></div>
+      <h2 class="panel__title panel__title--inline" id="agenda-title">Up next</h2>
+      <ol class="agenda" id="agenda-list"></ol>
+    </aside>
+
+    <!-- ── Meeting takeaways ──────────────────────────────────────── -->
+    <section class="panel panel--doc" id="panel-takeaways" aria-labelledby="takeaways-title">
+      <header class="panel__head">
+        <h2 class="panel__title" id="takeaways-title">Team Meeting Takeaways</h2>
+        <div class="panel__controls">
+          <span class="pager" id="takeaways-pager"></span>
+          <button class="tool tool--icon" data-doc-prev="takeaways" aria-label="Previous document">‹</button>
+          <button class="tool tool--icon" data-doc-next="takeaways" aria-label="Next document">›</button>
+          <button class="tool tool--icon" data-expand="panel-takeaways" aria-label="Expand panel">⤢</button>
+        </div>
+      </header>
+      <div class="doc-viewport" id="takeaways-body"></div>
+      <footer class="panel__foot" id="takeaways-foot"></footer>
+    </section>
+
+    <!-- ── Team updates ───────────────────────────────────────────── -->
+    <section class="panel panel--doc" id="panel-updates" aria-labelledby="updates-title">
+      <header class="panel__head">
+        <h2 class="panel__title" id="updates-title">Team Updates</h2>
+        <div class="panel__controls">
+          <span class="pager" id="updates-pager"></span>
+          <button class="tool tool--icon" data-doc-prev="updates" aria-label="Previous update">‹</button>
+          <button class="tool tool--icon" data-doc-next="updates" aria-label="Next update">›</button>
+          <button class="tool tool--icon" data-expand="panel-updates" aria-label="Expand panel">⤢</button>
+        </div>
+      </header>
+      <div class="doc-viewport" id="updates-body"></div>
+      <footer class="panel__foot" id="updates-foot"></footer>
+    </section>
+
+    <!-- ── Project tracking ───────────────────────────────────────── -->
+    <section class="panel panel--projects" id="panel-projects" aria-labelledby="projects-title">
+      <header class="panel__head">
+        <h2 class="panel__title" id="projects-title">Project Tracking</h2>
+        <div class="stat-row" id="projects-stats"></div>
+        <div class="panel__controls">
+          <button class="tool tool--icon" data-expand="panel-projects" aria-label="Expand board">⤢</button>
+        </div>
+      </header>
+      <div class="board-scroll">
+        <div class="kanban" id="kanban"></div>
+      </div>
+      <footer class="panel__foot" id="projects-foot"></footer>
+    </section>
+
+    <!-- ── News ticker ────────────────────────────────────────────── -->
+    <footer class="ticker" id="ticker" aria-label="World news headlines">
+      <span class="ticker__label">World</span>
+      <div class="ticker__viewport">
+        <div class="ticker__track" id="ticker-track"></div>
+      </div>
+      <span class="ticker__status" id="ticker-status" aria-live="polite"></span>
+    </footer>
+  </div>
+
+  <div class="link-state" id="link-state" hidden>Reconnecting…</div>
+
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

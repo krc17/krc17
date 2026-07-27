@@ -1,0 +1,265 @@
+# Engineering Team Dashboard
+
+A full-screen wall display for a touchscreen TV. It shows a shared blackboard you
+can write on with the touch pen, meeting takeaways and team updates pulled
+straight out of folders, a Kanban project board, the date/time and calendar, and
+a scrolling world-news ticker.
+
+Everything updates by itself. Drop a Word doc in a folder and it is on the wall a
+second later — nobody has to touch the TV.
+
+![Layout](docs/layout.svg)
+
+---
+
+## What's on screen
+
+| Section | Where its content comes from |
+|---|---|
+| **Blackboard** | Drawn on the TV with a stylus or finger. Saved to disk, so it survives a reboot and mirrors to any other screen showing the dashboard. |
+| **Team Meeting Takeaways** | Every `.docx` / `.pdf` / `.md` / `.txt` in `data\meeting-takeaways`. Newest first, auto-rotating. |
+| **Team Updates** | Same, from `data\team-updates`. One file per project or per person works well. |
+| **Project Tracking** | `data\projects\projects.yaml` — a Kanban board with owners, priority, due dates, health and progress. |
+| **Date / time / calendar** | The clock, a month grid, and the next few events from your calendar's ICS link. |
+| **News ticker** | RSS world-news feeds, refreshed every 10 minutes. |
+
+---
+
+## Setup on Windows
+
+**Requirements:** Windows 10 or 11, and Python 3.11+.
+If you don't have Python: `winget install --id Python.Python.3.12 --source winget`
+(or grab it from python.org and tick *Add python.exe to PATH*).
+
+1. Copy this `dashboard` folder onto the PC driving the TV.
+2. Double-click **`Install.bat`**.
+   It builds a private virtual environment, installs the dependencies, creates
+   `dashboard.env`, and registers a task so the wall comes back on its own after
+   a reboot. No admin rights, nothing installed machine-wide.
+3. Open **`dashboard.env`** in Notepad and set at least:
+   - `DASHBOARD_TZ` — your timezone, e.g. `America/New_York`
+   - `CALENDAR_ICS_URLS` — your calendar's ICS link (optional; see below)
+4. Double-click **`Start Dashboard.bat`**.
+
+The server starts hidden and a dedicated Edge window opens full-screen on the TV.
+
+**Everyday controls**
+
+| Action | How |
+|---|---|
+| Start it | `Start Dashboard.bat`, or the *Team Dashboard* desktop shortcut |
+| Leave kiosk mode | `Ctrl+W` or `Alt+F4` on the TV |
+| Stop the server too | `windows\Stop-Dashboard.ps1` |
+| Run windowed while setting up | `Start Dashboard.bat -Windowed` |
+| Server only, no browser | `Start Dashboard.bat -NoBrowser` |
+| Remove it | `windows\Uninstall-Dashboard.ps1` (your `data\` folder is kept) |
+
+Logs land in `dashboard.log` and `dashboard.log.err` next to the app.
+
+### Letting the team drop files from their own desks
+
+By default the dashboard reads the `data\` folder beside the app. Point it at a
+share instead and everyone can update the wall without walking over to it — set
+these in `dashboard.env`:
+
+```
+TAKEAWAYS_DIR=\\fileserver\team\dashboard\meeting-takeaways
+UPDATES_DIR=\\fileserver\team\dashboard\team-updates
+PROJECTS_DIR=\\fileserver\team\dashboard\projects
+```
+
+The watcher handles UNC paths and SMB shares. If the share is briefly
+unreachable the panel keeps showing what it last read.
+
+### Viewing it from another machine
+
+Set `DASHBOARD_HOST=0.0.0.0` in `dashboard.env`, restart, and open
+`http://<tv-pc-name>:8770/` from any browser on the LAN. Handy for checking the
+board from your desk. Windows Firewall will prompt once — allow it on the
+private network only.
+
+There is no authentication, so keep it on a trusted network.
+
+---
+
+## Filling in the content
+
+### Meeting takeaways and team updates
+
+Drop files in the folder. That's the whole workflow.
+
+- **Word** (`.docx`) — headings, bullets, and tables are picked up.
+  A `Heading 1` at the top becomes the card title.
+- **PDF** — text is extracted and headings/bullets are inferred from the layout.
+  Scanned PDFs need OCR first; this reads text, not pictures of text.
+- **Markdown** / **plain text** — `#` headings and `-` bullets render as you'd expect.
+
+Files are ordered newest-first and the panel cycles through them every 25
+seconds (`ROTATION_SECONDS`). Touch a panel to hold it — rotation resumes on its
+own after 90 seconds. The `‹ ›` buttons page manually, and `⤢` blows the panel
+up full-screen for a closer read.
+
+### Project board
+
+Edit `data\projects\projects.yaml`. The header comment in that file documents
+every field; the short version:
+
+```yaml
+board:
+  name: Engineering Delivery
+  columns: [Backlog, In Progress, Blocked, In Review, Done]
+
+projects:
+  - id: INF-114
+    title: Proxmox cluster HA failover
+    owner: Kevin Caughman
+    status: In Progress
+    priority: high
+    progress: 65
+    due: 2026-08-14
+    tags: [infra, proxmox]
+    milestones:
+      - name: Live migration smoke test
+        due: 2026-08-14
+        done: false
+```
+
+Only `title` is required. Everything else has a sensible fallback:
+
+- **Health** (on-track / at-risk / off-track) is derived from the due date and
+  progress unless you set it explicitly. Past due, or blocked, reads off-track;
+  under a week out with less than 75% done reads at-risk.
+- **Progress** falls back to the share of completed milestones, then to the
+  column.
+- **Status** accepts what people actually type — `wip`, `qa`, `on hold`,
+  `shipped` all land in the right column.
+
+Cards sort most-urgent-first inside each column: overdue, then priority, then
+due date. You can split projects across several `.yaml`/`.json` files in the
+folder; they merge into one board.
+
+### Calendar
+
+Paste one or more ICS URLs into `CALENDAR_ICS_URLS`, comma-separated.
+
+- **Google Calendar** → Settings → your calendar → *Secret address in iCal format*
+- **Outlook / Microsoft 365** → Settings → Calendar → Shared calendars → *Publish a calendar* → ICS link
+
+Recurring events are expanded locally, so the wall shows the next real
+occurrence. Leave it blank for a clean month grid with no events.
+
+> The secret ICS link grants read access to that calendar to anyone who has it.
+> Keep `dashboard.env` off shared drives and out of version control.
+
+### News ticker
+
+`NEWS_FEEDS` takes any comma-separated list of RSS/Atom URLs. Duplicate wire
+stories are collapsed. If the network drops, the last good pull stays on screen
+and the timestamp on the right turns amber rather than the ticker going blank.
+
+---
+
+## Blackboard notes
+
+- Pen pressure is honoured on Windows Ink devices — press harder for a heavier line.
+- A resting palm is rejected while you write with the stylus.
+- Strokes are stored as vectors, so the board redraws crisply at any window size
+  and stays a few KB on disk.
+- **Undo** removes the last stroke; the eraser removes whole strokes it touches.
+- **Clear** asks first.
+- If two screens show the dashboard, a stroke on one appears on the other within
+  a couple of seconds.
+
+The board lives in `data\blackboard\board.json`. Delete that file to reset it.
+
+---
+
+## How it works
+
+```
+Windows PC on the TV
+├─ python -m uvicorn backend.app:app     hidden background process
+│   ├─ watchdog        folder change → SSE push → panel repaints
+│   ├─ SSE /api/stream one connection per screen, auto-reconnects
+│   └─ polls RSS every 10 min, ICS every 15 min
+└─ Edge --kiosk http://localhost:8770    dedicated profile, own window
+```
+
+The frontend is plain ES modules and CSS — no build step, no npm, nothing to
+compile. Edit a file in `frontend\` and reload the TV.
+
+| Path | What it is |
+|---|---|
+| `backend\app.py` | Routes, SSE fan-out, blackboard validation |
+| `backend\config.py` | Every environment variable |
+| `backend\sources\documents.py` | Word / PDF / Markdown → renderable blocks |
+| `backend\sources\projects.py` | YAML → board model, health and progress rules |
+| `backend\sources\news.py` | Feed fetching, dedupe, failure handling |
+| `backend\sources\agenda.py` | ICS parsing and recurrence expansion |
+| `backend\watcher.py` | Debounced filesystem watching |
+| `frontend\js\*.js` | One module per panel |
+| `frontend\css\dashboard.css` | The whole stylesheet |
+
+### API
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/state` | Everything at once — what a fresh screen loads |
+| `GET /api/stream` | Server-sent events; pushes `content` and `blackboard` |
+| `GET /api/takeaways`, `/api/updates`, `/api/projects`, `/api/news`, `/api/agenda` | Individual panels |
+| `GET`/`PUT` `/api/blackboard` | Read and save strokes |
+| `GET /api/health` | Liveness, plus how many screens are connected |
+
+---
+
+## Design choices worth knowing
+
+**Dark only.** A white panel on a wall is a lamp pointed at the room. The theme
+is a deliberate single look, not a missing feature.
+
+**Colour is doing a job, not decorating.** Series colours come from a palette
+validated for colour-blind separation against the exact surface the cards sit
+on. Project health always ships as icon + word + colour, so it never depends on
+hue alone. The status colours (green/amber/red) are reserved for health and are
+never reused as a category colour.
+
+**Sized for distance.** Type scales with the viewport, so the same layout works
+on a 43" desk-side panel and a 75" wall. Touch targets are at least 44px.
+
+**Degrades quietly.** Feeds down, share unreachable, a corrupt file in a folder —
+each of those affects one panel and says so in small text. Nothing takes the
+wall down.
+
+---
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| "No suitable Python was found" | Install Python 3.11+, tick *Add to PATH*, re-run `Install.bat` |
+| Panel stuck on old content | Check the file isn't still open in Word — Word holds a lock and writes a `~$` temp file, which is ignored |
+| PDF shows nothing | It's probably a scan. Run OCR on it first |
+| Ticker empty, timestamp amber | Network or feed URL problem — check `dashboard.log` |
+| Calendar empty | Confirm the ICS link opens in a browser and returns a `.ics` file |
+| Kiosk mode ignored | Close all other Edge windows, or just re-run `Start Dashboard.bat` — it uses its own profile |
+| TV sleeps | The start script sets the power timeouts, but check Windows Settings → Power |
+| Board not saving | Look for "Not saved" under the blackboard, then check `dashboard.log.err` |
+
+Reset everything without losing content: `windows\Uninstall-Dashboard.ps1` then
+`Install.bat`. Your `data\` folder and `dashboard.env` are left alone.
+
+---
+
+## Running it somewhere other than Windows
+
+The backend is plain Python and has no Windows-specific code:
+
+```bash
+python -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/python -m uvicorn backend.app:app --host 0.0.0.0 --port 8770
+```
+
+Configure it with the same variables as `dashboard.env`, exported into the
+environment. On a Raspberry Pi driving the TV, add a systemd unit and launch
+Chromium with `--kiosk http://localhost:8770`.

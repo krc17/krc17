@@ -1,0 +1,258 @@
+"""Engineering team wall dashboard — HTTP API, SSE push, and static frontend."""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+from contextlib import asynccontextmanager
+from datetime import datetime
+from pathlib import Path
+from typing import Any, AsyncIterator
+from zoneinfo import ZoneInfo
+
+from fastapi import Body, FastAPI, Request
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
+
+from .config import Settings, load_settings
+from .hub import EventHub
+from .sources import documents, projects
+from .sources.agenda import AgendaService
+from .sources.news import NewsService
+from .storage import BlackboardStore
+from .watcher import ContentWatcher
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s  %(levelname)-7s %(name)s: %(message)s",
+    datefmt="%H:%M:%S",
+)
+log = logging.getLogger("dashboard")
+
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+MAX_STROKES = 4000
+MAX_POINTS_PER_STROKE = 5000
+
+settings: Settings = load_settings()
+hub = EventHub()
+blackboard = BlackboardStore(settings.blackboard_file)
+news = NewsService(settings.news_feeds, settings.news_max_items)
+agenda = AgendaService(settings.calendar_ics_urls, settings.timezone, settings.calendar_horizon_days)
+
+
+# --------------------------------------------------------------------------- #
+# Lifecycle
+# --------------------------------------------------------------------------- #
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    hub.bind_loop(asyncio.get_running_loop())
+
+    watcher = ContentWatcher(lambda channel: hub.publish("content", {"channel": channel}))
+    watcher.watch("takeaways", settings.takeaways_dir)
+    watcher.watch("updates", settings.updates_dir)
+    watcher.watch("projects", settings.projects_dir)
+    watcher.start()
+
+    tasks = [
+        asyncio.create_task(_poll(news.refresh, settings.news_refresh_seconds, "news")),
+        asyncio.create_task(_poll(agenda.refresh, settings.calendar_refresh_seconds, "agenda")),
+    ]
+    log.info("dashboard ready — data dir %s", settings.data_dir)
+
+    try:
+        yield
+    finally:
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        await asyncio.to_thread(watcher.stop)
+
+
+async def _poll(refresh: Any, interval: int, channel: str) -> None:
+    """Refresh a network-backed source forever, announcing each successful pull."""
+    while True:
+        try:
+            await refresh()
+            hub.publish("content", {"channel": channel})
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            log.exception("%s refresh failed", channel)
+        await asyncio.sleep(interval)
+
+
+app = FastAPI(title="Engineering Team Dashboard", lifespan=lifespan, docs_url=None, redoc_url=None)
+
+
+# --------------------------------------------------------------------------- #
+# Content API
+# --------------------------------------------------------------------------- #
+@app.get("/api/config")
+async def get_config() -> dict[str, Any]:
+    return {
+        "team_name": settings.team_name,
+        "timezone": settings.timezone,
+        "rotation_seconds": settings.rotation_seconds,
+        "calendar_configured": bool(settings.calendar_ics_urls),
+    }
+
+
+@app.get("/api/takeaways")
+async def get_takeaways() -> dict[str, Any]:
+    return {"documents": await asyncio.to_thread(documents.load_folder, settings.takeaways_dir)}
+
+
+@app.get("/api/updates")
+async def get_updates() -> dict[str, Any]:
+    return {"documents": await asyncio.to_thread(documents.load_folder, settings.updates_dir)}
+
+
+@app.get("/api/projects")
+async def get_projects() -> dict[str, Any]:
+    return await asyncio.to_thread(projects.load_board, settings.projects_dir)
+
+
+@app.get("/api/news")
+async def get_news() -> dict[str, Any]:
+    return news.snapshot
+
+
+@app.get("/api/agenda")
+async def get_agenda() -> dict[str, Any]:
+    return agenda.snapshot
+
+
+@app.get("/api/now")
+async def get_now() -> dict[str, Any]:
+    """Authoritative clock, so a TV with a drifting RTC still shows the right time."""
+    zone = ZoneInfo(settings.timezone) if _valid_zone(settings.timezone) else ZoneInfo("UTC")
+    now = datetime.now(zone)
+    return {"iso": now.isoformat(timespec="seconds"), "timezone": str(zone)}
+
+
+@app.get("/api/state")
+async def get_state() -> dict[str, Any]:
+    """One-shot bootstrap so a freshly opened screen paints in a single round trip."""
+    takeaways, updates, board = await asyncio.gather(
+        asyncio.to_thread(documents.load_folder, settings.takeaways_dir),
+        asyncio.to_thread(documents.load_folder, settings.updates_dir),
+        asyncio.to_thread(projects.load_board, settings.projects_dir),
+    )
+    return {
+        "config": await get_config(),
+        "takeaways": takeaways,
+        "updates": updates,
+        "projects": board,
+        "news": news.snapshot,
+        "agenda": agenda.snapshot,
+        "blackboard": blackboard.read(),
+        "now": await get_now(),
+    }
+
+
+# --------------------------------------------------------------------------- #
+# Blackboard
+# --------------------------------------------------------------------------- #
+@app.get("/api/blackboard")
+async def get_blackboard() -> dict[str, Any]:
+    return blackboard.read()
+
+
+@app.put("/api/blackboard")
+async def put_blackboard(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    strokes = payload.get("strokes")
+    if not isinstance(strokes, list):
+        return JSONResponse({"error": "strokes must be a list"}, status_code=400)
+
+    cleaned = [stroke for stroke in (_clean_stroke(s) for s in strokes[:MAX_STROKES]) if stroke]
+    saved = await asyncio.to_thread(blackboard.write, cleaned)
+    # client_id lets the writing screen ignore the echo of its own save.
+    hub.publish(
+        "blackboard",
+        {"revision": saved["revision"], "client_id": payload.get("client_id", "")},
+    )
+    return saved
+
+
+def _clean_stroke(stroke: Any) -> dict[str, Any] | None:
+    """Whitelist stroke fields — the board is persisted and replayed on other screens.
+
+    Points are flat (x, y, pressure) triples, so the length must be a multiple
+    of three. A single triple is a legitimate stroke: it renders as a dot.
+    """
+    if not isinstance(stroke, dict):
+        return None
+    points = stroke.get("points")
+    if not isinstance(points, list) or len(points) < 3 or len(points) % 3 != 0:
+        return None
+
+    coords: list[float] = []
+    for value in points[: MAX_POINTS_PER_STROKE * 3]:
+        try:
+            coords.append(round(float(value), 4))
+        except (TypeError, ValueError):
+            return None
+
+    try:
+        width = float(stroke.get("width", 4) or 4)
+    except (TypeError, ValueError):
+        width = 4.0
+
+    tool = stroke.get("tool")
+    return {
+        "points": coords,
+        "color": str(stroke.get("color", "#f4f4ef"))[:24],
+        "width": max(1.0, min(80.0, width)),
+        "tool": tool if tool in ("chalk", "pen", "highlighter", "eraser") else "chalk",
+    }
+
+
+# --------------------------------------------------------------------------- #
+# Server-sent events
+# --------------------------------------------------------------------------- #
+@app.get("/api/stream")
+async def stream(request: Request) -> StreamingResponse:
+    queue = hub.subscribe()
+
+    async def event_source() -> AsyncIterator[str]:
+        yield "retry: 3000\n\n"
+        try:
+            while True:
+                if await request.is_disconnected():
+                    break
+                try:
+                    yield await asyncio.wait_for(queue.get(), timeout=20.0)
+                except asyncio.TimeoutError:
+                    yield ": keep-alive\n\n"  # keeps proxies and the browser from timing out
+        finally:
+            hub.unsubscribe(queue)
+
+    return StreamingResponse(
+        event_source(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "Connection": "keep-alive"},
+    )
+
+
+@app.get("/api/health")
+async def health() -> dict[str, Any]:
+    return {"status": "ok", "screens": hub.subscriber_count}
+
+
+# --------------------------------------------------------------------------- #
+# Frontend
+# --------------------------------------------------------------------------- #
+def _valid_zone(name: str) -> bool:
+    try:
+        ZoneInfo(name)
+        return True
+    except Exception:
+        return False
+
+
+@app.get("/")
+async def index() -> FileResponse:
+    return FileResponse(FRONTEND_DIR / "index.html", headers={"Cache-Control": "no-store"})
+
+
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")

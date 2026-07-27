@@ -1,7 +1,7 @@
 - 👋 Hi, I’m Kevin. This is my Git.
-- 👀 I’m interested in homelabbing with Proxmox - filtering and catching traffic, serving media, and hosting game emulation. Also random Pi projects.
+- 👀 I’m homelabbing with Proxmox, testing Claude Code, building small projects on Pi boards.
 - 🌱 I’m currently learning python scripting homelabbing and SIEM analysis and incident response. 
-- 💞️ I’m looking to collaborate on Pi projects, testing lab functionality. Just throwing things at a wall and seeing if I like the sound it makes :)
+- 💞️ I’m looking to collaborate on Pi projects, testing lab functionality. Just throwing things at a wall
 - 📫 Reach me los#2614 on Discord
 
 <!---

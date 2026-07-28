@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Stops the dashboard server and closes the kiosk browser window.
 #>
@@ -22,7 +22,7 @@ if (Test-Path $PidFile) {
     }
     Remove-Item $PidFile -Force
 } else {
-    Write-Host 'No PID file — the server may not have been started from this script.' -ForegroundColor DarkGray
+    Write-Host 'No PID file - the server may not have been started from this script.' -ForegroundColor DarkGray
 }
 
 # Close only the kiosk window, identified by its dedicated profile directory.

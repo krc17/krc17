@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     One-time setup for the Engineering Team Dashboard on Windows.
 
@@ -116,7 +116,7 @@ Write-Step 'Preparing configuration'
 $envFile = Join-Path $AppRoot 'dashboard.env'
 if (-not (Test-Path $envFile)) {
     Copy-Item (Join-Path $AppRoot 'dashboard.env.example') $envFile
-    Write-Ok "Created dashboard.env — edit it to set your timezone and calendar"
+    Write-Ok "Created dashboard.env - edit it to set your timezone and calendar"
 } else {
     Write-Note 'dashboard.env already exists, leaving it alone'
 }
@@ -171,7 +171,7 @@ Write-Host @"
   Setup complete.
 
   Next:
-    1. Edit  dashboard.env  — set DASHBOARD_TZ and, if you want events,
+    1. Edit  dashboard.env  - set DASHBOARD_TZ and, if you want events,
        paste your calendar's ICS link into CALENDAR_ICS_URLS.
     2. Double-click "Start Dashboard.bat" (or the desktop shortcut) to
        launch it full-screen on the TV.

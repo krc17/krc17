@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Starts the dashboard server and opens it full-screen on the TV.
 
@@ -13,7 +13,7 @@
     Start the server only. Useful when the TV is driven by another machine.
 
 .PARAMETER Windowed
-    Open a normal resizable window instead of kiosk mode — handy while you are
+    Open a normal resizable window instead of kiosk mode - handy while you are
     still setting things up.
 #>
 
@@ -117,7 +117,7 @@ if ($NoBrowser) {
 # Kiosk browser
 # --------------------------------------------------------------------------- #
 function Resolve-Browser {
-    # ${env:ProgramFiles(x86)} needs the braces — the parentheses are not part of
+    # ${env:ProgramFiles(x86)} needs the braces - the parentheses are not part of
     # a bare $env: variable name, so "$env:ProgramFiles(x86)" resolves wrongly.
     $programFiles = $env:ProgramFiles
     $programFilesX86 = ${env:ProgramFiles(x86)}
@@ -136,7 +136,7 @@ function Resolve-Browser {
 
 $browser = Resolve-Browser
 if (-not $browser) {
-    Write-Host 'No Edge or Chrome found — opening in the default browser instead.' -ForegroundColor Yellow
+    Write-Host 'No Edge or Chrome found - opening in the default browser instead.' -ForegroundColor Yellow
     Start-Process $url
     exit 0
 }
@@ -171,7 +171,7 @@ try {
     powercfg /change monitor-timeout-ac 0 2>&1 | Out-Null
     powercfg /change standby-timeout-ac 0 2>&1 | Out-Null
 } catch {
-    Write-Host 'Could not change the power timeouts — set "never sleep" manually.' -ForegroundColor DarkGray
+    Write-Host 'Could not change the power timeouts - set "never sleep" manually.' -ForegroundColor DarkGray
 }
 
 Write-Host @"
@@ -179,6 +179,6 @@ Write-Host @"
   Dashboard is live at $url
 
   Press Ctrl+W (or Alt+F4) on the TV to close kiosk mode.
-  The server keeps running — stop it with windows\Stop-Dashboard.ps1
+  The server keeps running - stop it with windows\Stop-Dashboard.ps1
 
 "@ -ForegroundColor Green

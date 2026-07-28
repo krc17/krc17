@@ -1,9 +1,9 @@
-<#
+﻿<#
 .SYNOPSIS
     Removes the autostart task, the virtual environment and the shortcut.
 
 .DESCRIPTION
-    Your content in data\ and your dashboard.env are never touched — pass
+    Your content in data\ and your dashboard.env are never touched - pass
     -RemoveData only if you really want the folders cleared too.
 #>
 

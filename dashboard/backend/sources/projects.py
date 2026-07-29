@@ -181,6 +181,7 @@ def _normalise(project: dict[str, Any], columns: list[str]) -> dict[str, Any] | 
     column = _resolve_column(status, columns)
     due = _parse_date(project.get("due") or project.get("due_date") or project.get("target"))
     milestones = _milestones(project.get("milestones"))
+    explicit = project.get("progress", project.get("percent_complete"))
     progress = _progress(project, column, milestones)
     health = _health(project, column, due, progress)
 
@@ -194,6 +195,8 @@ def _normalise(project: dict[str, Any], columns: list[str]) -> dict[str, Any] | 
         "health": health,
         "priority": _priority(project.get("priority")),
         "progress": progress,
+        # Lets the detail sheet say whether a number is pinned or inferred.
+        "progress_derived": explicit is None,
         "due": due.isoformat() if due else None,
         "due_in_days": (due - date.today()).days if due else None,
         "overdue": bool(due and due < date.today() and column != "Done"),

@@ -1352,3 +1352,80 @@ body.is-card-dragging .pages { overflow-x: hidden; }
 }
 
 .toast[hidden] { display: none; }
+
+/* =========================================================================
+   Inline editors in the card sheet (progress, due date)
+   ========================================================================= */
+.edit-block {
+  padding: 0.6rem 0.7rem;
+  background: var(--plane);
+  border-radius: var(--radius-sm);
+}
+
+.edit-row {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.edit-btn {
+  flex: 1 1 0;
+  min-width: 3.4rem;
+  min-height: 2.75rem;           /* finger-sized, same floor as every control */
+  padding: 0 0.5rem;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 650;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.edit-btn:hover:not(:disabled) { color: var(--ink); background: var(--surface-3); }
+.edit-btn:active:not(:disabled) { transform: translateY(1px); }
+
+.edit-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.edit-btn--preset { font-size: 0.8rem; font-weight: 600; }
+
+.edit-btn.is-current {
+  color: var(--ink);
+  border-color: var(--series-1);
+  background: var(--surface-3);
+}
+
+.edit-btn--clear { color: var(--muted); }
+.edit-btn--clear:hover { color: var(--status-critical); border-color: var(--status-critical); }
+
+.edit-btn:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
+
+/* A larger meter, since this one is the thing being edited. */
+.meter--large { margin: 0; gap: 0.6rem; }
+.meter--large .meter__track { height: 10px; border-radius: 5px; }
+.meter--large .meter__value { font-size: 0.92rem; min-width: 3rem; }
+
+.edit-current {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.edit-current.is-soon { color: var(--status-warning); }
+.edit-current.is-overdue { color: var(--status-critical); }
+
+.edit-note {
+  margin: 0.5rem 0 0;
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: var(--muted);
+}

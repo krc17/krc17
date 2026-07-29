@@ -21,6 +21,7 @@ import tempfile
 import threading
 import time
 from dataclasses import dataclass
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Callable
 
@@ -75,6 +76,55 @@ class BoardWriter:
             return f"{previous or 'unset'} -> {status}"
 
         return self._edit(card_id, mutate, "status")
+
+    def set_progress(self, card_id: str, progress: int) -> WriteResult:
+        clamped = max(0, min(100, int(progress)))
+
+        def mutate(card: Any) -> str | None:
+            previous = card.get("progress")
+            if previous is not None and int(previous) == clamped:
+                return None
+            card["progress"] = clamped
+            return f"{previous if previous is not None else 'derived'}% -> {clamped}%"
+
+        return self._edit(card_id, mutate, "progress")
+
+    def shift_due(self, card_id: str, days: int) -> WriteResult:
+        """Nudge the due date by whole days, or set it from today if unset."""
+
+        def mutate(card: Any) -> str | None:
+            current = _as_date(card.get("due"))
+            base = current or date.today()
+            # An unset date starts from today, so +7 means "a week from now"
+            # rather than a week after some arbitrary epoch.
+            target = base + timedelta(days=days) if current else date.today() + timedelta(days=days)
+            if current == target:
+                return None
+            card["due"] = target          # a date, so ruamel emits it unquoted
+            return f"{current.isoformat() if current else 'unset'} -> {target.isoformat()}"
+
+        return self._edit(card_id, mutate, "due")
+
+    def set_due(self, card_id: str, value: str | None) -> WriteResult:
+        """Set an explicit ISO date, or clear it when value is empty."""
+        if value:
+            parsed = _as_date(value)
+            if parsed is None:
+                return WriteResult(False, f"{value!r} is not a YYYY-MM-DD date", card_id)
+        else:
+            parsed = None
+
+        def mutate(card: Any) -> str | None:
+            current = _as_date(card.get("due"))
+            if current == parsed:
+                return None
+            if parsed is None:
+                card.pop("due", None)
+                return f"{current.isoformat() if current else 'unset'} -> cleared"
+            card["due"] = parsed          # keep the file's native date style
+            return f"{current.isoformat() if current else 'unset'} -> {parsed.isoformat()}"
+
+        return self._edit(card_id, mutate, "due")
 
     def toggle_milestone(self, card_id: str, index: int, done: bool) -> WriteResult:
         def mutate(card: Any) -> str | None:
@@ -165,6 +215,21 @@ class BoardWriter:
         except OSError:
             Path(tmp_name).unlink(missing_ok=True)
             raise
+
+
+def _as_date(raw: Any) -> date | None:
+    """Accept what ruamel hands back: a real date, a datetime, or a string."""
+    if isinstance(raw, datetime):
+        return raw.date()
+    if isinstance(raw, date):
+        return raw
+    text = str(raw or "").strip()
+    if not text:
+        return None
+    try:
+        return date.fromisoformat(text)
+    except ValueError:
+        return None
 
 
 def _identity(entry: dict[str, Any]) -> str:

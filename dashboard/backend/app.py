@@ -172,6 +172,59 @@ async def move_card(card_id: str, request: Request, payload: dict[str, Any] = Bo
     return JSONResponse(result.as_dict(), status_code=200 if result.ok else 409)
 
 
+@app.post("/api/projects/{card_id}/progress")
+async def set_progress(
+    card_id: str, request: Request, payload: dict[str, Any] = Body(...)
+) -> JSONResponse:
+    """Set progress outright, or nudge it by a delta."""
+    if not _is_local(request):
+        return JSONResponse({"ok": False, "detail": "read-only from here"}, status_code=403)
+
+    board = await asyncio.to_thread(projects.load_board, settings.projects_dir)
+    card = next((entry for entry in board["cards"] if entry["id"] == card_id), None)
+    if card is None:
+        return JSONResponse({"ok": False, "detail": f"no card {card_id}"}, status_code=404)
+
+    if "delta" in payload:
+        try:
+            target = int(card["progress"]) + int(payload["delta"])
+        except (TypeError, ValueError):
+            return JSONResponse({"ok": False, "detail": "delta must be a number"}, status_code=400)
+    else:
+        try:
+            target = int(payload.get("progress"))
+        except (TypeError, ValueError):
+            return JSONResponse({"ok": False, "detail": "progress must be a number"}, status_code=400)
+
+    result = await asyncio.to_thread(board_writer.set_progress, card_id, target)
+    if result.ok:
+        hub.publish("content", {"channel": "projects"})
+    return JSONResponse(result.as_dict(), status_code=200 if result.ok else 409)
+
+
+@app.post("/api/projects/{card_id}/due")
+async def set_due(card_id: str, request: Request, payload: dict[str, Any] = Body(...)) -> JSONResponse:
+    """Shift the due date by whole days, or set/clear it explicitly."""
+    if not _is_local(request):
+        return JSONResponse({"ok": False, "detail": "read-only from here"}, status_code=403)
+
+    if "days" in payload:
+        try:
+            days = int(payload["days"])
+        except (TypeError, ValueError):
+            return JSONResponse({"ok": False, "detail": "days must be a number"}, status_code=400)
+        result = await asyncio.to_thread(board_writer.shift_due, card_id, days)
+    else:
+        raw = payload.get("due")
+        result = await asyncio.to_thread(
+            board_writer.set_due, card_id, str(raw).strip() if raw else None
+        )
+
+    if result.ok:
+        hub.publish("content", {"channel": "projects"})
+    return JSONResponse(result.as_dict(), status_code=200 if result.ok else 409)
+
+
 @app.post("/api/projects/{card_id}/milestone")
 async def toggle_milestone(
     card_id: str, request: Request, payload: dict[str, Any] = Body(...)

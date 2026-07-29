@@ -152,6 +152,8 @@ The board is not read-only. On the display itself:
 |---|---|
 | **Tap a card** | Opens its detail sheet: full description, every milestone, tags, and buttons to move it to any other column. |
 | **Tick a milestone** | Writes `done: true` back to the YAML. Progress recalculates from the milestone count unless you set `progress:` explicitly. |
+| **Adjust progress** | `-25 / -10 / +10 / +25` to nudge, or `0 / 25 / 50 / 75 / 100%` to jump. Setting a value pins it, overriding the milestone-derived figure. |
+| **Change the due date** | `-1 wk / -1 d / +1 d / +1 wk` to shift, or `Today / +2 wks / +1 mo` to set from today. `Clear` removes the date. |
 | **Press and hold a card, then drag** | Lifts the card and drops it in another column. |
 
 Changes are written straight back into `projects.yaml`, so the file stays the
@@ -165,6 +167,9 @@ source of truth and the wall never drifts from it. Specifically:
   message appears on screen rather than overwriting their work.
 - **Only the display can write.** The endpoints are refused for any non-loopback
   client, so a screen watching from someone's desk is read-only.
+
+Dates are written back in your file's own style -- `due: 2026-08-14`, unquoted,
+not turned into a string.
 
 The hold before a drag is deliberate: without it, every attempt to scroll a
 column would start a drag instead. A quick flick scrolls; a hold lifts.

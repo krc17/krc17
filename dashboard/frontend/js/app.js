@@ -80,6 +80,10 @@ const cardDetail = new CardDetail({
     cardDetail.close();
     moveCard(cardId, status);
   },
+  onProgress: (cardId, body) =>
+    mutate(`/api/projects/${encodeURIComponent(cardId)}/progress`, { ...body, cardId }),
+  onDue: (cardId, body) =>
+    mutate(`/api/projects/${encodeURIComponent(cardId)}/due`, { ...body, cardId }),
 });
 
 function openCard(cardId) {

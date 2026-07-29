@@ -9,7 +9,7 @@ dashboard.env
 
 # Runtime state
 dashboard.log
-dashboard.log.err
+dashboard.stdout.log
 .dashboard.pid
 data/blackboard/board.json
 

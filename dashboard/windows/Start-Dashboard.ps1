@@ -26,7 +26,9 @@ param(
 $ErrorActionPreference = 'Stop'
 $AppRoot = Split-Path -Parent $PSScriptRoot
 $VenvPython = Join-Path $AppRoot '.venv\Scripts\pythonw.exe'
+# uvicorn writes its normal output to stderr, so that stream is the real log.
 $LogFile = Join-Path $AppRoot 'dashboard.log'
+$StdOutFile = Join-Path $AppRoot 'dashboard.stdout.log'
 $PidFile = Join-Path $AppRoot '.dashboard.pid'
 $BrowserProfile = Join-Path $env:LOCALAPPDATA 'TeamDashboard\browser-profile'
 
@@ -57,8 +59,12 @@ Import-EnvFile (Join-Path $AppRoot 'dashboard.env')
 
 $listenHost = if ($env:DASHBOARD_HOST) { $env:DASHBOARD_HOST } else { '127.0.0.1' }
 $port = if ($env:DASHBOARD_PORT) { [int]$env:DASHBOARD_PORT } else { 8770 }
-# Always point the browser at the loopback name, even when bound to 0.0.0.0.
-$url = "http://localhost:$port/"
+
+# Use the literal IPv4 loopback, never the name "localhost". Windows resolves
+# localhost to ::1 first, and uvicorn bound to 127.0.0.1 is not listening on
+# IPv6 -- the request then burns its whole timeout before falling back, so the
+# health check never succeeds and the browser never opens.
+$url = "http://127.0.0.1:$port/"
 
 # --------------------------------------------------------------------------- #
 # Server
@@ -66,7 +72,7 @@ $url = "http://localhost:$port/"
 function Test-DashboardUp {
     try {
         # ${url} braces are required: "$url`a..." would emit a BEL character.
-        $response = Invoke-WebRequest -Uri "${url}api/health" -TimeoutSec 2 -UseBasicParsing
+        $response = Invoke-WebRequest -Uri "${url}api/health" -TimeoutSec 5 -UseBasicParsing
         return $response.StatusCode -eq 200
     } catch { return $false }
 }
@@ -86,14 +92,14 @@ if (Test-DashboardUp) {
     )
     $server = Start-Process -FilePath $VenvPython -ArgumentList $arguments `
         -WorkingDirectory $AppRoot -WindowStyle Hidden -PassThru `
-        -RedirectStandardOutput $LogFile -RedirectStandardError "$LogFile.err"
+        -RedirectStandardOutput $StdOutFile -RedirectStandardError $LogFile
     $server.Id | Set-Content $PidFile
 
     $deadline = (Get-Date).AddSeconds(45)
     while ((Get-Date) -lt $deadline) {
         if ($server.HasExited) {
-            Write-Host "`nThe server exited immediately. Last lines of $LogFile.err:" -ForegroundColor Red
-            if (Test-Path "$LogFile.err") { Get-Content "$LogFile.err" -Tail 20 }
+            Write-Host "`nThe server exited immediately. Last lines of ${LogFile}:" -ForegroundColor Red
+            if (Test-Path $LogFile) { Get-Content $LogFile -Tail 20 }
             if ($Host.Name -eq 'ConsoleHost') { Read-Host 'Press Enter to close' }
             exit 1
         }
@@ -102,10 +108,19 @@ if (Test-DashboardUp) {
     }
 
     if (-not (Test-DashboardUp)) {
-        Write-Host "The server did not come up in time. Check $LogFile" -ForegroundColor Red
-        exit 1
+        # The health check is a convenience, not a gate. If the process is alive
+        # we still open the display -- a slow first start must not cost the wall
+        # its browser, which is exactly what an early exit here used to do.
+        if ($server.HasExited) {
+            Write-Host "The server exited. Check $LogFile" -ForegroundColor Red
+            if ($Host.Name -eq 'ConsoleHost') { Read-Host 'Press Enter to close' }
+            exit 1
+        }
+        Write-Host "Health check did not answer, but the server process is alive." -ForegroundColor Yellow
+        Write-Host "Opening the display anyway - if it is blank, check $LogFile" -ForegroundColor Yellow
+    } else {
+        Write-Host "Server is up (PID $($server.Id))." -ForegroundColor Green
     }
-    Write-Host "Server is up (PID $($server.Id))." -ForegroundColor Green
 }
 
 if ($NoBrowser) {

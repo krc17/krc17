@@ -54,7 +54,7 @@ The server starts hidden and a dedicated Edge window opens full-screen on the TV
 | Server only, no browser | `Start Dashboard.bat -NoBrowser` |
 | Remove it | `windows\Uninstall-Dashboard.ps1` (your `data\` folder is kept) |
 
-Logs land in `dashboard.log` and `dashboard.log.err` next to the app.
+Logs land in `dashboard.log` and `dashboard.stdout.log` next to the app.
 
 ### Letting the team drop files from their own desks
 
@@ -243,7 +243,7 @@ wall down.
 | Calendar empty | Confirm the ICS link opens in a browser and returns a `.ics` file |
 | Kiosk mode ignored | Close all other Edge windows, or just re-run `Start Dashboard.bat` — it uses its own profile |
 | TV sleeps | The start script sets the power timeouts, but check Windows Settings → Power |
-| Board not saving | Look for "Not saved" under the blackboard, then check `dashboard.log.err` |
+| Board not saving | Look for "Not saved" under the blackboard, then check `dashboard.log` |
 
 Reset everything without losing content: `windows\Uninstall-Dashboard.ps1` then
 `Install.bat`. Your `data\` folder and `dashboard.env` are left alone.

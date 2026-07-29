@@ -57,7 +57,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         asyncio.create_task(_poll(news.refresh, settings.news_refresh_seconds, "news")),
         asyncio.create_task(_poll(agenda.refresh, settings.calendar_refresh_seconds, "agenda")),
     ]
-    log.info("dashboard ready — data dir %s", settings.data_dir)
+    log.info("dashboard ready - data dir %s", settings.data_dir)
 
     try:
         yield

@@ -1,9 +1,13 @@
 # Engineering Team Dashboard
 
-A full-screen wall display for a touchscreen TV. It shows a shared blackboard you
-can write on with the touch pen, meeting takeaways and team updates pulled
-straight out of folders, a Kanban project board, the date/time and calendar, and
-a scrolling world-news ticker.
+A full-screen wall display for a touchscreen TV, laid out as two swipeable pages.
+
+**Page 1 -- Overview:** meeting takeaways and team updates pulled straight out of
+folders, a Kanban project board, and the date/time with calendar and agenda.
+**Page 2 -- Blackboard:** a full-screen surface to write on with the touch pen.
+
+Swipe left and right to move between them, or tap **Overview** / **Blackboard**
+in the bottom bar. A scrolling world-news ticker runs across both pages.
 
 Everything updates by itself. Drop a Word doc in a folder and it is on the wall a
 second later — nobody has to touch the TV.
@@ -16,7 +20,7 @@ second later — nobody has to touch the TV.
 
 | Section | Where its content comes from |
 |---|---|
-| **Blackboard** | Drawn on the TV with a stylus or finger. Saved to disk, so it survives a reboot and mirrors to any other screen showing the dashboard. |
+| **Blackboard** (page 2) | Drawn on the TV with a stylus or finger. Saved to disk, so it survives a reboot and mirrors to any other screen showing the dashboard. |
 | **Team Meeting Takeaways** | Every `.docx` / `.pdf` / `.md` / `.txt` in `data\meeting-takeaways`. Newest first, auto-rotating. |
 | **Team Updates** | Same, from `data\team-updates`. One file per project or per person works well. |
 | **Project Tracking** | `data\projects\projects.yaml` — a Kanban board with owners, priority, due dates, health and progress. |
@@ -48,8 +52,10 @@ The server starts hidden and a dedicated Edge window opens full-screen on the TV
 | Action | How |
 |---|---|
 | Start it | `Start Dashboard.bat`, or the *Team Dashboard* desktop shortcut |
-| Leave kiosk mode | `Ctrl+W` or `Alt+F4` on the TV |
-| Stop the server too | `windows\Stop-Dashboard.ps1` |
+| Change page | Swipe left/right, tap **Overview** / **Blackboard**, or press `←` `→` (or `1` / `2`) |
+| Minimise, close, or shut down | Tap the **power icon** at the right of the bottom bar |
+| Leave kiosk mode by keyboard | `Ctrl+W` or `Alt+F4` on the TV |
+| Stop the server from a terminal | `windows\Stop-Dashboard.ps1` |
 | Run windowed while setting up | `Start Dashboard.bat -Windowed` |
 | Server only, no browser | `Start Dashboard.bat -NoBrowser` |
 | Remove it | `windows\Uninstall-Dashboard.ps1` (your `data\` folder is kept) |
@@ -171,6 +177,26 @@ and the timestamp on the right turns amber rather than the ticker going blank.
   a couple of seconds.
 
 The board lives in `data\blackboard\board.json`. Delete that file to reset it.
+
+The blackboard is page 2, so it gets the whole screen. Note that a finger dragged
+across the canvas **draws** rather than changing page -- nobody should flip the
+page mid-stroke -- so use the **‹ Overview** button in the header, the page
+buttons in the bottom bar, or the `←` key to go back.
+
+## Closing the dashboard
+
+The power icon at the right of the bottom bar opens a sheet with three choices:
+
+| Choice | What happens |
+|---|---|
+| **Minimise** | The window hides. Server and browser both keep running; reopen from the taskbar. |
+| **Close the display** | The kiosk window closes cleanly. The server stays up, so `Start Dashboard.bat` reopens it in a second. |
+| **Shut everything down** | Window closes and the server stops. Next start does the full launch. |
+
+The icon only appears on the display machine itself. The endpoints behind it are
+refused for any non-loopback client, so nobody browsing the wall from their desk
+can shut it down -- and the launcher passes `--no-proxy-headers` so that check
+reads the real socket, not a header a client can set.
 
 ---
 

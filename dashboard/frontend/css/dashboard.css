@@ -80,43 +80,79 @@ body {
 }
 
 /* =========================================================================
-   Wall layout
+   Wall shell — swipeable pages, with the ticker and pager pinned outside
    ========================================================================= */
 .wall {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   height: 100vh;
   height: 100dvh;
   padding: var(--gap);
   gap: var(--gap);
-  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1.15fr) minmax(0, 0.82fr);
-  grid-template-rows: minmax(0, 1.12fr) minmax(0, 0.95fr) minmax(0, 0.93fr) auto;
-  grid-template-areas:
-    "board     board    agenda"
-    "takeaways updates  agenda"
-    "projects  projects projects"
-    "ticker    ticker   ticker";
 }
 
-.panel--board    { grid-area: board; }
-.panel--agenda   { grid-area: agenda; }
+/* Horizontal scroll-snap gives native touch swiping, momentum and all. */
+.pages {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;   /* don't trigger the browser's back gesture */
+  scrollbar-width: none;
+}
+
+.pages::-webkit-scrollbar { display: none; }
+
+.page {
+  flex: 0 0 100%;
+  min-width: 100%;
+  min-height: 0;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;         /* never skip a page on a fast flick */
+}
+
+/* --- Page 1: overview ---------------------------------------------------- */
+/* The blackboard's old row is handed entirely to the document panels: they go
+   from 32% to 69% of the page height, while the agenda and the project board
+   keep exactly the heights they had before. */
+.page--overview {
+  display: grid;
+  gap: var(--gap);
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1.15fr) minmax(0, 0.82fr);
+  grid-template-rows: minmax(0, 2.23fr) minmax(0, 1fr);
+  grid-template-areas:
+    "takeaways updates  agenda"
+    "projects  projects projects";
+}
+
 #panel-takeaways { grid-area: takeaways; }
 #panel-updates   { grid-area: updates; }
+.panel--agenda   { grid-area: agenda; }
 .panel--projects { grid-area: projects; }
-.ticker          { grid-area: ticker; }
 
-/* Portrait / narrow: stack into a single column and let the wall scroll. */
+/* --- Page 2: blackboard -------------------------------------------------- */
+.page--board {
+  display: flex;
+  padding-right: 1px;               /* keeps the snap edge crisp at some zooms */
+}
+
+.page--board .panel--board {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Portrait / narrow: stack each page into one column and let it scroll. */
 @media (max-aspect-ratio: 1/1) {
-  html, body { overflow: auto; }
-  .wall {
-    height: auto;
-    min-height: 100dvh;
+  .pages { overflow-y: hidden; }
+  .page--overview {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: none;
-    grid-template-areas:
-      "board" "agenda" "takeaways" "updates" "projects" "ticker";
+    grid-auto-rows: minmax(30vh, auto);
+    grid-template-areas: "takeaways" "updates" "agenda" "projects";
+    overflow-y: auto;
   }
-  .panel--board { min-height: 48vh; }
-  .panel { min-height: 30vh; }
 }
 
 /* =========================================================================
@@ -221,6 +257,16 @@ body {
 
 .tool--icon { padding: 0; font-size: 1.15rem; line-height: 1; }
 .tool--danger:hover { border-color: var(--status-critical); color: #fff; }
+
+/* The way off the blackboard page, since the canvas swallows swipes. */
+.tool--back {
+  gap: 0.35rem;
+  padding: 0 0.9rem;
+  color: var(--ink);
+  border-color: var(--hairline);
+}
+
+.tool--back:hover { border-color: var(--series-1); }
 
 .tool--size .dot {
   width: var(--dot);
@@ -524,7 +570,7 @@ body {
   color: var(--ink);
 }
 
-.pager {
+.pager-count {
   font-size: 0.78rem;
   font-variant-numeric: tabular-nums;
   color: var(--muted);
@@ -826,13 +872,200 @@ body {
 }
 
 /* =========================================================================
+   Page switcher
+   ========================================================================= */
+.pager {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex: none;
+  padding-right: 0.4rem;
+  border-right: 1px solid var(--hairline);
+}
+
+.pager__dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.1rem;               /* fits the dock without stealing page height */
+  padding: 0 0.75rem;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: color 140ms ease, background 140ms ease, border-color 140ms ease;
+}
+
+.pager__dot::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.55;
+  transition: opacity 140ms ease;
+}
+
+.pager__dot:hover { color: var(--ink-2); background: var(--surface-1); }
+
+.pager__dot.is-active {
+  color: var(--ink);
+  background: var(--surface-1);
+  border-color: var(--hairline);
+}
+
+.pager__dot.is-active::before { opacity: 1; background: var(--series-1); }
+
+.pager__dot:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
+
+.board-note {
+  margin-left: auto;
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+/* Quiet by default — it should never compete with the content on the wall. */
+.session-btn {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  font-size: 0.95rem;
+  color: #56554f;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: color 140ms ease, background 140ms ease, border-color 140ms ease;
+}
+
+.session-btn:hover {
+  color: var(--status-critical);
+  background: var(--surface-1);
+  border-color: var(--hairline);
+}
+
+.session-btn:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
+.session-btn[hidden] { display: none; }
+
+/* =========================================================================
+   Exit sheet
+   ========================================================================= */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gap);
+  background: rgba(5, 5, 5, 0.72);
+  backdrop-filter: blur(3px);
+}
+
+.sheet-backdrop[hidden] { display: none; }
+
+.sheet {
+  width: min(30rem, 100%);
+  padding: clamp(1.2rem, 2vw, 2rem);
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.8);
+}
+
+.sheet__title {
+  margin: 0 0 0.3rem;
+  font-size: 1.2rem;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.sheet__note {
+  margin: 0 0 1.1rem;
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+
+.sheet__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.sheet__action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  font: inherit;
+  text-align: left;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-left: 3px solid var(--series-1);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 130ms ease, border-color 130ms ease;
+}
+
+.sheet__action:hover { background: var(--surface-3); }
+
+.sheet__action--danger { border-left-color: var(--status-critical); }
+.sheet__action--danger:hover { border-color: var(--status-critical); }
+
+.sheet__action-name {
+  font-size: 0.98rem;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.sheet__action-hint {
+  font-size: 0.79rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.sheet__cancel {
+  width: 100%;
+  margin-top: 0.85rem;
+  padding: 0.7rem;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: transparent;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.sheet__cancel:hover { color: var(--ink); background: var(--surface-2); }
+
+:where(.sheet__action, .sheet__cancel):focus-visible {
+  outline: 2px solid var(--series-1);
+  outline-offset: 2px;
+}
+
+/* =========================================================================
    News ticker
    ========================================================================= */
 .ticker {
   display: flex;
   align-items: center;
   gap: 0.9rem;
-  height: clamp(2.6rem, 3.4vh, 3.6rem);
+  flex: none;
+  height: clamp(2.9rem, 3.6vh, 3.9rem);
   padding: 0 var(--pad);
   background: var(--surface-1);
   border: 1px solid var(--hairline);

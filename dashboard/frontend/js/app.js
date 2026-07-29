@@ -4,7 +4,9 @@
  */
 import { Blackboard } from './blackboard.js';
 import { DocumentPanel } from './documents.js';
+import { Pager } from './pager.js';
 import { renderBoard } from './projects.js';
+import { SessionControl } from './session.js';
 import { TimePanel } from './timepanel.js';
 import { Ticker } from './ticker.js';
 
@@ -56,6 +58,27 @@ const blackboard = new Blackboard({
   tools: document.getElementById('board-tools'),
   hint: document.getElementById('board-hint'),
   saveState: document.getElementById('board-save-state'),
+});
+
+new SessionControl({
+  button: document.getElementById('session-open'),
+  sheet: document.getElementById('session-sheet'),
+  note: document.getElementById('sheet-note'),
+});
+
+const pager = new Pager({
+  scroller: document.getElementById('pages'),
+  dots: document.querySelectorAll('.pager__dot'),
+});
+
+pager.onChange((page) => {
+  if (page === 'board') {
+    // Another screen may have drawn while this one sat on the overview page.
+    blackboard.pull();
+  } else {
+    // Leaving the board mid-stroke would otherwise leave the save pending.
+    blackboard.flush();
+  }
 });
 
 /* ------------------------------------------------------------------ */

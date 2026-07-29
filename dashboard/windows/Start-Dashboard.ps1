@@ -88,7 +88,11 @@ if (Test-DashboardUp) {
         '--host', $listenHost,
         '--port', $port,
         '--log-level', 'info',
-        '--no-access-log'
+        '--no-access-log',
+        # Never behind a proxy, so do not let a client's X-Forwarded-For decide
+        # who it claims to be. The display-control endpoints are loopback-only
+        # and that check reads the socket peer.
+        '--no-proxy-headers'
     )
     $server = Start-Process -FilePath $VenvPython -ArgumentList $arguments `
         -WorkingDirectory $AppRoot -WindowStyle Hidden -PassThru `

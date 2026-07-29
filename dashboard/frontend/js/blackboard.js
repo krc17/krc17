@@ -27,6 +27,7 @@ export class Blackboard {
     this.width = 4;
     this.erasing = false;
     this.saveTimer = null;
+    this.pendingSave = false;
     /** Logical drawing space; strokes are stored 0–1 so any screen size fits. */
     this.dpr = 1;
 
@@ -57,13 +58,26 @@ export class Blackboard {
     }
   }
 
+  /**
+   * Write any debounced changes right now. Called when the wall swipes away
+   * from the board page, so a stroke finished a moment earlier is never left
+   * sitting in a pending timer.
+   */
+  flush() {
+    if (!this.pendingSave) return;
+    clearTimeout(this.saveTimer);
+    this.#save();
+  }
+
   #scheduleSave() {
     clearTimeout(this.saveTimer);
+    this.pendingSave = true;
     this.#setSaveState('saving', 'Saving…');
     this.saveTimer = setTimeout(() => this.#save(), SAVE_DEBOUNCE_MS);
   }
 
   async #save() {
+    this.pendingSave = false;
     try {
       const response = await fetch('/api/blackboard', {
         method: 'PUT',

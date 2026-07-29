@@ -14,6 +14,7 @@ from fastapi import Body, FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
+from . import session
 from .config import Settings, load_settings
 from .hub import EventHub
 from .sources import documents, projects
@@ -237,6 +238,53 @@ async def stream(request: Request) -> StreamingResponse:
 @app.get("/api/health")
 async def health() -> dict[str, Any]:
     return {"status": "ok", "screens": hub.subscriber_count}
+
+
+# --------------------------------------------------------------------------- #
+# Display control (minimise / close / shut down)
+# --------------------------------------------------------------------------- #
+LOOPBACK_HOSTS = {"127.0.0.1", "::1", "localhost"}
+
+
+def _is_local(request: Request) -> bool:
+    """Only the screen sitting in front of the TV may stop the wall.
+
+    With DASHBOARD_HOST=0.0.0.0 the dashboard is readable from the whole LAN,
+    and nobody at their desk should be able to shut down the display.
+    """
+    client = request.client
+    return bool(client and client.host in LOOPBACK_HOSTS)
+
+
+@app.get("/api/session")
+async def session_capabilities(request: Request) -> dict[str, Any]:
+    """Lets the page hide controls it would not be allowed to use."""
+    return {
+        "supported": session.is_supported(),
+        "local": _is_local(request),
+        "platform": session.platform_name(),
+    }
+
+
+@app.post("/api/session/{action}")
+async def session_action(action: str, request: Request) -> JSONResponse:
+    if not _is_local(request):
+        return JSONResponse(
+            {"ok": False, "detail": "only available on the display itself"}, status_code=403
+        )
+
+    if action == "minimize":
+        result = session.minimize_display()
+    elif action == "close":
+        result = session.close_display()
+    elif action == "shutdown":
+        closed = session.close_display()
+        stopped = session.stop_server()
+        result = session.ActionResult(stopped.ok, f"{closed.detail}; {stopped.detail}")
+    else:
+        return JSONResponse({"ok": False, "detail": "unknown action"}, status_code=404)
+
+    return JSONResponse({"ok": result.ok, "detail": result.detail})
 
 
 # --------------------------------------------------------------------------- #

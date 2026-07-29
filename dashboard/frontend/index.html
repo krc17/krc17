@@ -11,112 +11,169 @@
 <body>
   <div class="wall" id="wall">
 
-    <!-- ── Blackboard ─────────────────────────────────────────────── -->
-    <section class="panel panel--board" id="panel-board" aria-labelledby="board-title">
-      <header class="panel__head">
-        <h2 class="panel__title" id="board-title">Blackboard</h2>
-        <div class="board-tools" id="board-tools">
-          <div class="tool-group" role="radiogroup" aria-label="Chalk colour">
-            <button class="swatch is-active" data-color="#f4f4ef" style="--swatch:#f4f4ef" role="radio" aria-checked="true" aria-label="White chalk"></button>
-            <button class="swatch" data-color="#3987e5" style="--swatch:#3987e5" role="radio" aria-checked="false" aria-label="Blue chalk"></button>
-            <button class="swatch" data-color="#199e70" style="--swatch:#199e70" role="radio" aria-checked="false" aria-label="Green chalk"></button>
-            <button class="swatch" data-color="#c98500" style="--swatch:#c98500" role="radio" aria-checked="false" aria-label="Amber chalk"></button>
-            <button class="swatch" data-color="#e66767" style="--swatch:#e66767" role="radio" aria-checked="false" aria-label="Red chalk"></button>
+    <!-- Two swipeable pages. The ticker and pager sit outside so they persist. -->
+    <div class="pages" id="pages">
+
+      <!-- ══ Page 1 — Overview ═══════════════════════════════════════ -->
+      <section class="page page--overview" id="page-overview" aria-label="Overview">
+
+        <!-- Meeting takeaways -->
+        <section class="panel panel--doc" id="panel-takeaways" aria-labelledby="takeaways-title">
+          <header class="panel__head">
+            <h2 class="panel__title" id="takeaways-title">Team Meeting Takeaways</h2>
+            <div class="panel__controls">
+              <span class="pager-count" id="takeaways-pager"></span>
+              <button class="tool tool--icon" data-doc-prev="takeaways" aria-label="Previous document">‹</button>
+              <button class="tool tool--icon" data-doc-next="takeaways" aria-label="Next document">›</button>
+              <button class="tool tool--icon" data-expand="panel-takeaways" aria-label="Expand panel">⤢</button>
+            </div>
+          </header>
+          <div class="doc-viewport" id="takeaways-body"></div>
+          <footer class="panel__foot" id="takeaways-foot"></footer>
+        </section>
+
+        <!-- Team updates -->
+        <section class="panel panel--doc" id="panel-updates" aria-labelledby="updates-title">
+          <header class="panel__head">
+            <h2 class="panel__title" id="updates-title">Team Updates</h2>
+            <div class="panel__controls">
+              <span class="pager-count" id="updates-pager"></span>
+              <button class="tool tool--icon" data-doc-prev="updates" aria-label="Previous update">‹</button>
+              <button class="tool tool--icon" data-doc-next="updates" aria-label="Next update">›</button>
+              <button class="tool tool--icon" data-expand="panel-updates" aria-label="Expand panel">⤢</button>
+            </div>
+          </header>
+          <div class="doc-viewport" id="updates-body"></div>
+          <footer class="panel__foot" id="updates-foot"></footer>
+        </section>
+
+        <!-- Time, calendar, agenda -->
+        <aside class="panel panel--agenda" id="panel-agenda" aria-labelledby="agenda-title">
+          <div class="clock">
+            <p class="clock__time" id="clock-time">--:--</p>
+            <p class="clock__meta"><span id="clock-day">—</span> · <span id="clock-zone">—</span></p>
           </div>
-          <div class="tool-group" role="radiogroup" aria-label="Stroke width">
-            <button class="tool tool--size is-active" data-width="4" role="radio" aria-checked="true" aria-label="Thin">
-              <span class="dot" style="--dot:6px"></span>
-            </button>
-            <button class="tool tool--size" data-width="10" role="radio" aria-checked="false" aria-label="Medium">
-              <span class="dot" style="--dot:12px"></span>
-            </button>
-            <button class="tool tool--size" data-width="20" role="radio" aria-checked="false" aria-label="Thick">
-              <span class="dot" style="--dot:20px"></span>
-            </button>
+          <div class="calendar" id="calendar" aria-label="Month calendar"></div>
+          <h2 class="panel__title panel__title--inline" id="agenda-title">Up next</h2>
+          <ol class="agenda" id="agenda-list"></ol>
+        </aside>
+
+        <!-- Project tracking -->
+        <section class="panel panel--projects" id="panel-projects" aria-labelledby="projects-title">
+          <header class="panel__head">
+            <h2 class="panel__title" id="projects-title">Project Tracking</h2>
+            <div class="stat-row" id="projects-stats"></div>
+            <div class="panel__controls">
+              <button class="tool tool--icon" data-expand="panel-projects" aria-label="Expand board">⤢</button>
+            </div>
+          </header>
+          <div class="board-scroll">
+            <div class="kanban" id="kanban"></div>
           </div>
-          <div class="tool-group">
-            <button class="tool" data-action="eraser" aria-pressed="false" title="Eraser">Eraser</button>
-            <button class="tool" data-action="undo" title="Undo last stroke">Undo</button>
-            <button class="tool tool--danger" data-action="clear" title="Wipe the board">Clear</button>
+          <footer class="panel__foot" id="projects-foot"></footer>
+        </section>
+      </section>
+
+      <!-- ══ Page 2 — Blackboard ═════════════════════════════════════ -->
+      <section class="page page--board" id="page-board" aria-label="Blackboard">
+        <section class="panel panel--board" id="panel-board" aria-labelledby="board-title">
+          <header class="panel__head">
+            <button class="tool tool--back" data-goto-page="0" aria-label="Back to overview">
+              <span aria-hidden="true">‹</span> Overview
+            </button>
+            <h2 class="panel__title" id="board-title">Blackboard</h2>
+            <div class="board-tools" id="board-tools">
+              <div class="tool-group" role="radiogroup" aria-label="Chalk colour">
+                <button class="swatch is-active" data-color="#f4f4ef" style="--swatch:#f4f4ef" role="radio" aria-checked="true" aria-label="White chalk"></button>
+                <button class="swatch" data-color="#3987e5" style="--swatch:#3987e5" role="radio" aria-checked="false" aria-label="Blue chalk"></button>
+                <button class="swatch" data-color="#199e70" style="--swatch:#199e70" role="radio" aria-checked="false" aria-label="Green chalk"></button>
+                <button class="swatch" data-color="#c98500" style="--swatch:#c98500" role="radio" aria-checked="false" aria-label="Amber chalk"></button>
+                <button class="swatch" data-color="#e66767" style="--swatch:#e66767" role="radio" aria-checked="false" aria-label="Red chalk"></button>
+              </div>
+              <div class="tool-group" role="radiogroup" aria-label="Stroke width">
+                <button class="tool tool--size is-active" data-width="4" role="radio" aria-checked="true" aria-label="Thin">
+                  <span class="dot" style="--dot:6px"></span>
+                </button>
+                <button class="tool tool--size" data-width="10" role="radio" aria-checked="false" aria-label="Medium">
+                  <span class="dot" style="--dot:12px"></span>
+                </button>
+                <button class="tool tool--size" data-width="20" role="radio" aria-checked="false" aria-label="Thick">
+                  <span class="dot" style="--dot:20px"></span>
+                </button>
+              </div>
+              <div class="tool-group">
+                <button class="tool" data-action="eraser" aria-pressed="false" title="Eraser">Eraser</button>
+                <button class="tool" data-action="undo" title="Undo last stroke">Undo</button>
+                <button class="tool tool--danger" data-action="clear" title="Wipe the board">Clear</button>
+              </div>
+            </div>
+          </header>
+          <div class="board-surface" id="board-surface">
+            <canvas id="board-canvas" aria-label="Shared blackboard. Draw with a stylus or finger."></canvas>
+            <p class="board-hint" id="board-hint">Write here with the touch pen</p>
           </div>
-        </div>
-      </header>
-      <div class="board-surface" id="board-surface">
-        <canvas id="board-canvas" aria-label="Shared blackboard. Draw with a stylus or finger."></canvas>
-        <p class="board-hint" id="board-hint">Write here with the touch pen</p>
-      </div>
-      <footer class="panel__foot">
-        <span class="save-state" id="board-save-state" aria-live="polite">Saved</span>
-      </footer>
-    </section>
+          <footer class="panel__foot">
+            <span class="save-state" id="board-save-state" aria-live="polite">Saved</span>
+            <span class="board-note">Drawing is captured here, so use ‹ Overview or the page buttons below to go back.</span>
+          </footer>
+        </section>
+      </section>
+    </div>
 
-    <!-- ── Time, calendar, agenda ─────────────────────────────────── -->
-    <aside class="panel panel--agenda" id="panel-agenda" aria-labelledby="agenda-title">
-      <div class="clock">
-        <p class="clock__time" id="clock-time">--:--</p>
-        <p class="clock__meta"><span id="clock-day">—</span> · <span id="clock-zone">—</span></p>
-      </div>
-      <div class="calendar" id="calendar" aria-label="Month calendar"></div>
-      <h2 class="panel__title panel__title--inline" id="agenda-title">Up next</h2>
-      <ol class="agenda" id="agenda-list"></ol>
-    </aside>
+    <!-- Bottom dock: page switcher, news ticker and the exit control share
+         one bar, so paging costs the wall no vertical space. -->
+    <footer class="ticker" id="ticker" aria-label="Page switcher and world news">
+      <nav class="pager" id="pager" aria-label="Dashboard pages">
+        <button class="pager__dot is-active" data-goto-page="0" aria-current="page">
+          <span class="pager__label">Overview</span>
+        </button>
+        <button class="pager__dot" data-goto-page="1">
+          <span class="pager__label">Blackboard</span>
+        </button>
+      </nav>
 
-    <!-- ── Meeting takeaways ──────────────────────────────────────── -->
-    <section class="panel panel--doc" id="panel-takeaways" aria-labelledby="takeaways-title">
-      <header class="panel__head">
-        <h2 class="panel__title" id="takeaways-title">Team Meeting Takeaways</h2>
-        <div class="panel__controls">
-          <span class="pager" id="takeaways-pager"></span>
-          <button class="tool tool--icon" data-doc-prev="takeaways" aria-label="Previous document">‹</button>
-          <button class="tool tool--icon" data-doc-next="takeaways" aria-label="Next document">›</button>
-          <button class="tool tool--icon" data-expand="panel-takeaways" aria-label="Expand panel">⤢</button>
-        </div>
-      </header>
-      <div class="doc-viewport" id="takeaways-body"></div>
-      <footer class="panel__foot" id="takeaways-foot"></footer>
-    </section>
-
-    <!-- ── Team updates ───────────────────────────────────────────── -->
-    <section class="panel panel--doc" id="panel-updates" aria-labelledby="updates-title">
-      <header class="panel__head">
-        <h2 class="panel__title" id="updates-title">Team Updates</h2>
-        <div class="panel__controls">
-          <span class="pager" id="updates-pager"></span>
-          <button class="tool tool--icon" data-doc-prev="updates" aria-label="Previous update">‹</button>
-          <button class="tool tool--icon" data-doc-next="updates" aria-label="Next update">›</button>
-          <button class="tool tool--icon" data-expand="panel-updates" aria-label="Expand panel">⤢</button>
-        </div>
-      </header>
-      <div class="doc-viewport" id="updates-body"></div>
-      <footer class="panel__foot" id="updates-foot"></footer>
-    </section>
-
-    <!-- ── Project tracking ───────────────────────────────────────── -->
-    <section class="panel panel--projects" id="panel-projects" aria-labelledby="projects-title">
-      <header class="panel__head">
-        <h2 class="panel__title" id="projects-title">Project Tracking</h2>
-        <div class="stat-row" id="projects-stats"></div>
-        <div class="panel__controls">
-          <button class="tool tool--icon" data-expand="panel-projects" aria-label="Expand board">⤢</button>
-        </div>
-      </header>
-      <div class="board-scroll">
-        <div class="kanban" id="kanban"></div>
-      </div>
-      <footer class="panel__foot" id="projects-foot"></footer>
-    </section>
-
-    <!-- ── News ticker ────────────────────────────────────────────── -->
-    <footer class="ticker" id="ticker" aria-label="World news headlines">
       <span class="ticker__label">World</span>
       <div class="ticker__viewport">
         <div class="ticker__track" id="ticker-track"></div>
       </div>
       <span class="ticker__status" id="ticker-status" aria-live="polite"></span>
+
+      <button class="session-btn" id="session-open" aria-label="Close or minimise the dashboard"
+              aria-haspopup="dialog" hidden>
+        <span aria-hidden="true">⏻</span>
+      </button>
     </footer>
   </div>
 
   <div class="link-state" id="link-state" hidden>Reconnecting…</div>
+
+  <!-- Exit sheet. A native confirm() is unreadable at TV distance and has
+       finger-sized-target problems, so this is a proper dialog. -->
+  <div class="sheet-backdrop" id="session-sheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+      <h2 class="sheet__title" id="sheet-title">Close the dashboard</h2>
+      <p class="sheet__note" id="sheet-note">The wall keeps running until you choose.</p>
+
+      <div class="sheet__actions">
+        <button class="sheet__action" data-session-action="minimize">
+          <span class="sheet__action-name">Minimise</span>
+          <span class="sheet__action-hint">Hide the window. Everything keeps running; reopen from the taskbar.</span>
+        </button>
+
+        <button class="sheet__action" data-session-action="close">
+          <span class="sheet__action-name">Close the display</span>
+          <span class="sheet__action-hint">Shut the kiosk window. The server stays up, so "Start Dashboard" reopens instantly.</span>
+        </button>
+
+        <button class="sheet__action sheet__action--danger" data-session-action="shutdown">
+          <span class="sheet__action-name">Shut everything down</span>
+          <span class="sheet__action-hint">Close the window and stop the server. Full restart needed next time.</span>
+        </button>
+      </div>
+
+      <button class="sheet__cancel" data-session-cancel>Cancel</button>
+    </div>
+  </div>
 
   <script type="module" src="/js/app.js"></script>
 </body>

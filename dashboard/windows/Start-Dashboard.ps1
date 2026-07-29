@@ -69,6 +69,31 @@ $url = "http://127.0.0.1:$port/"
 # --------------------------------------------------------------------------- #
 # Server
 # --------------------------------------------------------------------------- #
+function Get-DiskBuildStamp {
+    # Newest mtime across backend\ and frontend\, matching what the server
+    # computes at startup. Unix seconds so the two agree exactly.
+    $newest = 0
+    foreach ($folder in @('backend', 'frontend')) {
+        $path = Join-Path $AppRoot $folder
+        if (-not (Test-Path $path)) { continue }
+        Get-ChildItem $path -Recurse -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -notmatch '__pycache__' } |
+            ForEach-Object {
+                $stamp = [int][double]::Parse(
+                    (Get-Date $_.LastWriteTimeUtc -UFormat %s))
+                if ($stamp -gt $newest) { $newest = $stamp }
+            }
+    }
+    return $newest
+}
+
+function Get-RunningBuildStamp {
+    try {
+        $r = Invoke-WebRequest -Uri "${url}api/health" -TimeoutSec 5 -UseBasicParsing
+        return [int]((ConvertFrom-Json $r.Content).build)
+    } catch { return -1 }
+}
+
 function Test-DashboardUp {
     try {
         # ${url} braces are required: "$url`a..." would emit a BEL character.
@@ -77,7 +102,21 @@ function Test-DashboardUp {
     } catch { return $false }
 }
 
-if (Test-DashboardUp) {
+$running = Test-DashboardUp
+if ($running) {
+    # A server left over from a previous build would serve the new frontend
+    # from an old backend, and every new endpoint would 404 or 405.
+    $onDisk = Get-DiskBuildStamp
+    $inMemory = Get-RunningBuildStamp
+    if ($inMemory -lt $onDisk) {
+        Write-Host "A server from an older build is running. Restarting it..." -ForegroundColor Yellow
+        & (Join-Path $PSScriptRoot 'Stop-Dashboard.ps1') | Out-Null
+        Start-Sleep -Seconds 2
+        $running = $false
+    }
+}
+
+if ($running) {
     Write-Host "Dashboard already running on port $port." -ForegroundColor DarkGray
 } else {
     Write-Host "Starting the dashboard server on $listenHost`:$port ..." -ForegroundColor Cyan

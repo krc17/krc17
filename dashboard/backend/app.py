@@ -31,7 +31,27 @@ logging.basicConfig(
 )
 log = logging.getLogger("dashboard")
 
-FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+APP_ROOT = Path(__file__).resolve().parent.parent
+FRONTEND_DIR = APP_ROOT / "frontend"
+
+
+def _build_stamp() -> int:
+    """Newest mtime across the code, so a stale server can be spotted.
+
+    Unzipping a new build over an old one leaves the previous server running;
+    the launcher health check then finds it alive and skips the restart, and
+    the new frontend talks to a backend without its endpoints. The launcher
+    compares this against the files on disk and restarts when they are newer.
+    """
+    newest = 0.0
+    for folder in ("backend", "frontend"):
+        for item in (APP_ROOT / folder).rglob("*"):
+            if item.is_file() and "__pycache__" not in item.parts:
+                newest = max(newest, item.stat().st_mtime)
+    return int(newest)
+
+
+BUILD_STAMP = _build_stamp()
 MAX_STROKES = 4000
 MAX_POINTS_PER_STROKE = 5000
 
@@ -296,7 +316,7 @@ async def stream(request: Request) -> StreamingResponse:
 
 @app.get("/api/health")
 async def health() -> dict[str, Any]:
-    return {"status": "ok", "screens": hub.subscriber_count}
+    return {"status": "ok", "screens": hub.subscriber_count, "build": BUILD_STAMP}
 
 
 # --------------------------------------------------------------------------- #

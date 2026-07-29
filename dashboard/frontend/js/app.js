@@ -111,8 +111,15 @@ async function mutate(path, body) {
     });
     const result = await response.json();
     if (!result.ok) {
-      console.warn('board write refused:', result.detail);
-      toast(result.detail);
+      // 404/405 means this endpoint does not exist on the running server, which
+      // in practice means a new frontend is talking to an older backend left
+      // running from a previous build. Say that, not "Method Not Allowed".
+      const stale = response.status === 404 || response.status === 405;
+      const message = stale
+        ? 'The server is running an older build. Restart it: windows\\Stop-Dashboard.ps1, then Start Dashboard.bat'
+        : result.detail;
+      console.warn('board write refused:', response.status, result.detail);
+      toast(message);
     }
     // Repaint either way: on success to pick up derived progress and health,
     // on failure to undo whatever the optimistic move showed.

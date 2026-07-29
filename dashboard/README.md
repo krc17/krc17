@@ -287,6 +287,7 @@ wall down.
 
 | Symptom | Fix |
 |---|---|
+| "Method not allowed" when moving a card | A server from an older build is still running. `windows\Stop-Dashboard.ps1`, then `Start Dashboard.bat`. Newer builds detect this and restart automatically. |
 | "No suitable Python was found" | Install Python 3.11+, tick *Add to PATH*, re-run `Install.bat` |
 | Panel stuck on old content | Check the file isn't still open in Word — Word holds a lock and writes a `~$` temp file, which is ignored |
 | PDF shows nothing | It's probably a scan. Run OCR on it first |

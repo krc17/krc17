@@ -144,6 +144,31 @@ Cards sort most-urgent-first inside each column: overdue, then priority, then
 due date. You can split projects across several `.yaml`/`.json` files in the
 folder; they merge into one board.
 
+#### Moving cards on the TV
+
+The board is not read-only. On the display itself:
+
+| Gesture | What happens |
+|---|---|
+| **Tap a card** | Opens its detail sheet: full description, every milestone, tags, and buttons to move it to any other column. |
+| **Tick a milestone** | Writes `done: true` back to the YAML. Progress recalculates from the milestone count unless you set `progress:` explicitly. |
+| **Press and hold a card, then drag** | Lifts the card and drops it in another column. |
+
+Changes are written straight back into `projects.yaml`, so the file stays the
+source of truth and the wall never drifts from it. Specifically:
+
+- **Your comments survive.** Writing uses a round-trip YAML parser, so the
+  schema notes at the top of the file and any comments you add are preserved
+  exactly. Formatting and quoting stay as you wrote them.
+- **Hand edits win.** If the file changed on disk since the dashboard read it --
+  someone saving in Notepad, or a `git pull` -- the write is refused and a
+  message appears on screen rather than overwriting their work.
+- **Only the display can write.** The endpoints are refused for any non-loopback
+  client, so a screen watching from someone's desk is read-only.
+
+The hold before a drag is deliberate: without it, every attempt to scroll a
+column would start a drag instead. A quick flick scrolls; a hold lifts.
+
 ### Calendar
 
 Paste one or more ICS URLs into `CALENDAR_ICS_URLS`, comma-separated.

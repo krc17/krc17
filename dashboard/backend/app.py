@@ -19,6 +19,7 @@ from .config import Settings, load_settings
 from .hub import EventHub
 from .sources import documents, projects
 from .sources.agenda import AgendaService
+from .sources.board_writer import BoardWriter
 from .sources.news import NewsService
 from .storage import BlackboardStore
 from .watcher import ContentWatcher
@@ -37,6 +38,7 @@ MAX_POINTS_PER_STROKE = 5000
 settings: Settings = load_settings()
 hub = EventHub()
 blackboard = BlackboardStore(settings.blackboard_file)
+board_writer = BoardWriter(settings.projects_dir)
 news = NewsService(settings.news_feeds, settings.news_max_items)
 agenda = AgendaService(settings.calendar_ics_urls, settings.timezone, settings.calendar_horizon_days)
 
@@ -48,7 +50,15 @@ agenda = AgendaService(settings.calendar_ics_urls, settings.timezone, settings.c
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     hub.bind_loop(asyncio.get_running_loop())
 
-    watcher = ContentWatcher(lambda channel: hub.publish("content", {"channel": channel}))
+    def announce(channel: str) -> None:
+        # Our own YAML write fires the watcher; repainting mid-drag would snap
+        # the card back under the user's finger.
+        if channel == "projects" and board_writer.in_quiet_period():
+            log.debug("ignoring watcher event from our own write")
+            return
+        hub.publish("content", {"channel": channel})
+
+    watcher = ContentWatcher(announce)
     watcher.watch("takeaways", settings.takeaways_dir)
     watcher.watch("updates", settings.updates_dir)
     watcher.watch("projects", settings.projects_dir)
@@ -85,6 +95,19 @@ async def _poll(refresh: Any, interval: int, channel: str) -> None:
 app = FastAPI(title="Engineering Team Dashboard", lifespan=lifespan, docs_url=None, redoc_url=None)
 
 
+LOOPBACK_HOSTS = {"127.0.0.1", "::1", "localhost"}
+
+
+def _is_local(request: Request) -> bool:
+    """Only the screen in front of the TV may change or stop the wall.
+
+    With DASHBOARD_HOST=0.0.0.0 the dashboard is readable from the whole LAN,
+    but nobody at their desk should move cards or shut the display down.
+    """
+    client = request.client
+    return bool(client and client.host in LOOPBACK_HOSTS)
+
+
 # --------------------------------------------------------------------------- #
 # Content API
 # --------------------------------------------------------------------------- #
@@ -111,6 +134,42 @@ async def get_updates() -> dict[str, Any]:
 @app.get("/api/projects")
 async def get_projects() -> dict[str, Any]:
     return await asyncio.to_thread(projects.load_board, settings.projects_dir)
+
+
+@app.post("/api/projects/{card_id}/status")
+async def move_card(card_id: str, request: Request, payload: dict[str, Any] = Body(...)) -> JSONResponse:
+    """Move a card to another column, writing the change back to the YAML."""
+    if not _is_local(request):
+        return JSONResponse({"ok": False, "detail": "read-only from here"}, status_code=403)
+
+    status = str(payload.get("status", "")).strip()
+    if not status:
+        return JSONResponse({"ok": False, "detail": "status is required"}, status_code=400)
+
+    result = await asyncio.to_thread(board_writer.set_status, card_id, status)
+    if result.ok:
+        hub.publish("content", {"channel": "projects"})
+    return JSONResponse(result.as_dict(), status_code=200 if result.ok else 409)
+
+
+@app.post("/api/projects/{card_id}/milestone")
+async def toggle_milestone(
+    card_id: str, request: Request, payload: dict[str, Any] = Body(...)
+) -> JSONResponse:
+    if not _is_local(request):
+        return JSONResponse({"ok": False, "detail": "read-only from here"}, status_code=403)
+
+    try:
+        index = int(payload.get("index"))
+    except (TypeError, ValueError):
+        return JSONResponse({"ok": False, "detail": "index must be a number"}, status_code=400)
+
+    result = await asyncio.to_thread(
+        board_writer.toggle_milestone, card_id, index, bool(payload.get("done"))
+    )
+    if result.ok:
+        hub.publish("content", {"channel": "projects"})
+    return JSONResponse(result.as_dict(), status_code=200 if result.ok else 409)
 
 
 @app.get("/api/news")
@@ -243,19 +302,6 @@ async def health() -> dict[str, Any]:
 # --------------------------------------------------------------------------- #
 # Display control (minimise / close / shut down)
 # --------------------------------------------------------------------------- #
-LOOPBACK_HOSTS = {"127.0.0.1", "::1", "localhost"}
-
-
-def _is_local(request: Request) -> bool:
-    """Only the screen sitting in front of the TV may stop the wall.
-
-    With DASHBOARD_HOST=0.0.0.0 the dashboard is readable from the whole LAN,
-    and nobody at their desk should be able to shut down the display.
-    """
-    client = request.client
-    return bool(client and client.host in LOOPBACK_HOSTS)
-
-
 @app.get("/api/session")
 async def session_capabilities(request: Request) -> dict[str, Any]:
     """Lets the page hide controls it would not be allowed to use."""

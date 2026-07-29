@@ -36,8 +36,20 @@ const AVATAR_SLOTS = [
   'var(--series-5)', 'var(--series-6)', 'var(--series-7)', 'var(--series-8)',
 ];
 
+let currentBoard = null;
+
+/** The board as last rendered -- the detail sheet reads cards from here. */
+export function getCard(cardId) {
+  return currentBoard?.cards?.find((card) => card.id === cardId) ?? null;
+}
+
+export function getColumns() {
+  return currentBoard?.columns?.map((column) => column.name) ?? [];
+}
+
 export function renderBoard(board) {
   if (!board) return;
+  currentBoard = board;
   renderStats(board.summary ?? {});
   renderColumns(board);
   renderFoot(board);
@@ -81,6 +93,7 @@ function renderColumns(board) {
   kanban.replaceChildren(
     ...columns.map((column) => {
       const node = element('section', 'column');
+      node.dataset.column = column.name;
       const head = element('div', 'column__head');
       head.append(
         element('span', 'column__name', column.name),
@@ -103,6 +116,10 @@ function renderColumns(board) {
 
 function renderCard(card, columnName) {
   const node = element('article', 'card');
+  node.dataset.cardId = card.id;
+  node.tabIndex = 0;                       // reachable without a touchscreen
+  node.setAttribute('role', 'button');
+  node.setAttribute('aria-label', `${card.title}. ${card.status}. Open details.`);
   node.style.setProperty('--card-accent', COLUMN_ACCENT[columnName] ?? 'var(--muted)');
 
   if (card.id && card.id !== slug(card.title)) {

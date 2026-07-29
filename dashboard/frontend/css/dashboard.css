@@ -1152,3 +1152,203 @@ body {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* =========================================================================
+   Kanban touch interaction
+   ========================================================================= */
+.card {
+  cursor: pointer;
+  /* Vertical panning stays with the column; horizontal is ours to claim once
+     a drag lifts, so the page swiper never steals a sideways card move. */
+  touch-action: pan-y;
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.card:active { transform: scale(0.99); }
+.card:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
+
+/* The original stays in place, faded, so the column does not reflow mid-drag. */
+.card.is-dragging { opacity: 0.28; }
+
+.card-ghost {
+  position: fixed;
+  z-index: 100;
+  margin: 0;
+  pointer-events: none;
+  opacity: 0.96;
+  transform: rotate(1.5deg) scale(1.03);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.7);
+}
+
+.column {
+  transition: background 140ms ease, box-shadow 140ms ease;
+}
+
+.column.is-drop-target {
+  background: #14202e;
+  box-shadow: inset 0 0 0 2px var(--series-1);
+}
+
+/* While a card is in the air, nothing else should scroll or select. */
+body.is-card-dragging { cursor: grabbing; }
+body.is-card-dragging .column__cards { overflow: hidden; }
+body.is-card-dragging .pages { overflow-x: hidden; }
+
+/* =========================================================================
+   Card detail sheet
+   ========================================================================= */
+.sheet--card {
+  width: min(34rem, 100%);
+  max-height: 86vh;
+  overflow-y: auto;
+  border-left: 3px solid var(--card-accent, var(--series-1));
+}
+
+.card-detail__head { margin-bottom: 0.7rem; }
+.card-detail__head .card__id { display: block; margin-bottom: 0.15rem; }
+
+.card-detail__meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem 0.9rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.card-detail__pair { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+
+.card-detail__label {
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.card-detail__value {
+  font-size: 0.9rem;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-detail__summary {
+  margin: 0.85rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.card-detail__section {
+  margin: 1.1rem 0 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.milestones { margin: 0; padding: 0; list-style: none; }
+
+.milestone__toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 2.9rem;            /* finger-sized; these get tapped a lot */
+  padding: 0.4rem 0.5rem;
+  font: inherit;
+  font-size: 0.92rem;
+  text-align: left;
+  color: var(--ink-2);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.milestone__toggle:hover { background: var(--surface-2); }
+.milestone__toggle:focus-visible { outline: 2px solid var(--series-1); outline-offset: -2px; }
+
+.milestone__box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.4rem;
+  height: 1.4rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--plane);
+  background: transparent;
+  border: 2px solid var(--surface-3);
+  border-radius: 5px;
+}
+
+.milestone.is-done .milestone__box {
+  background: var(--status-good);
+  border-color: var(--status-good);
+}
+
+.milestone.is-done .milestone__name {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.milestone__name { flex: 1 1 auto; min-width: 0; }
+
+.milestone__due {
+  flex: none;
+  font-size: 0.76rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.card-detail__tags { margin-top: 0.9rem; }
+
+.move-row { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+
+.move-btn {
+  min-height: 2.75rem;
+  padding: 0 0.9rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-left: 3px solid var(--move-accent, var(--muted));
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.move-btn:hover { color: var(--ink); background: var(--surface-3); }
+.move-btn:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
+
+.card-detail__source {
+  margin: 1rem 0 0;
+  font-size: 0.72rem;
+  color: #56554f;
+}
+
+/* =========================================================================
+   Toast
+   ========================================================================= */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--gap) + 4.2rem);
+  z-index: 95;
+  transform: translateX(-50%);
+  max-width: min(28rem, 90vw);
+  padding: 0.65rem 1rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--plane);
+  background: var(--status-warning);
+  border-radius: 20px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+.toast[hidden] { display: none; }

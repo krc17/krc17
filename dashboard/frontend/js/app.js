@@ -3,9 +3,11 @@
  * panel in sync. Panels are dumb renderers — this module owns the data flow.
  */
 import { Blackboard } from './blackboard.js';
+import { CardDetail } from './carddetail.js';
+import { CardDrag } from './carddrag.js';
 import { DocumentPanel } from './documents.js';
 import { Pager } from './pager.js';
-import { renderBoard } from './projects.js';
+import { getCard, getColumns, renderBoard } from './projects.js';
 import { SessionControl } from './session.js';
 import { TimePanel } from './timepanel.js';
 import { Ticker } from './ticker.js';
@@ -65,6 +67,78 @@ new SessionControl({
   sheet: document.getElementById('session-sheet'),
   note: document.getElementById('sheet-note'),
 });
+
+/* ------------------------------------------------------------------ */
+/* Kanban interaction                                                  */
+/* ------------------------------------------------------------------ */
+const cardDetail = new CardDetail({
+  sheet: document.getElementById('card-sheet'),
+  getColumns,
+  onMilestone: (cardId, index, done) =>
+    mutate(`/api/projects/${encodeURIComponent(cardId)}/milestone`, { index, done }),
+  onMove: (cardId, status) => {
+    cardDetail.close();
+    moveCard(cardId, status);
+  },
+});
+
+function openCard(cardId) {
+  const detail = getCard(cardId);
+  if (detail) cardDetail.open(detail);
+}
+
+new CardDrag({
+  root: document.getElementById('kanban'),
+  onMove: (cardId, status) => moveCard(cardId, status),
+  onTap: openCard,
+});
+
+// Keyboard equivalent: cards are role="button" and focusable.
+document.getElementById('kanban').addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  const card = event.target.closest('.card');
+  if (!card) return;
+  event.preventDefault();
+  openCard(card.dataset.cardId);
+});
+
+async function mutate(path, body) {
+  try {
+    const response = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const result = await response.json();
+    if (!result.ok) {
+      console.warn('board write refused:', result.detail);
+      toast(result.detail);
+    }
+    // Repaint either way: on success to pick up derived progress and health,
+    // on failure to undo whatever the optimistic move showed.
+    await refresh('projects');
+    cardDetail.refresh(getCard(body.cardId ?? cardDetail.card?.id));
+    return result.ok;
+  } catch (error) {
+    console.warn('board write failed', error);
+    toast('Could not save that change.');
+    await refresh('projects');
+    return false;
+  }
+}
+
+function moveCard(cardId, status) {
+  return mutate(`/api/projects/${encodeURIComponent(cardId)}/status`, { status, cardId });
+}
+
+let toastTimer = null;
+function toast(message) {
+  const node = document.getElementById('toast');
+  node.textContent = message;
+  node.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { node.hidden = true; }, 4000);
+}
 
 const pager = new Pager({
   scroller: document.getElementById('pages'),

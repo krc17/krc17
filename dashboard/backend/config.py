@@ -43,6 +43,8 @@ class Settings:
     projects_dir: Path
     blackboard_dir: Path
 
+    host: str = "127.0.0.1"
+    port: int = 8770
     team_name: str = "Engineering"
     timezone: str = "America/New_York"
 
@@ -70,6 +72,8 @@ def load_settings() -> Settings:
         updates_dir=_env_path("UPDATES_DIR", data_dir / "team-updates"),
         projects_dir=_env_path("PROJECTS_DIR", data_dir / "projects"),
         blackboard_dir=_env_path("BLACKBOARD_DIR", data_dir / "blackboard"),
+        host=os.getenv("DASHBOARD_HOST", "127.0.0.1"),
+        port=_env_int("DASHBOARD_PORT", 8770),
         team_name=os.getenv("TEAM_NAME", "Engineering"),
         timezone=os.getenv("DASHBOARD_TZ", "America/New_York"),
         news_feeds=_env_list("NEWS_FEEDS", DEFAULT_FEEDS),

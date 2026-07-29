@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Post to the Team Dashboard</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>📋</text></svg>" />
+  <style>
+    /* Deliberately self-contained. This page is opened by people on phones and
+       laptops we do not control, so it must not depend on the wall's CSS or on
+       anything loading from elsewhere. */
+    :root {
+      color-scheme: dark;
+      --plane: #0d0d0d;
+      --surface: #1a1a19;
+      --surface-2: #222221;
+      --ink: #fff;
+      --ink-2: #c3c2b7;
+      --muted: #898781;
+      --line: rgba(255,255,255,0.12);
+      --accent: #3987e5;
+      --good: #0ca30c;
+      --bad: #d03b3b;
+      --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100dvh; padding: 1.25rem;
+      background: var(--plane); color: var(--ink);
+      font-family: var(--font); line-height: 1.5;
+      display: flex; justify-content: center;
+    }
+    main { width: 100%; max-width: 34rem; }
+    h1 { margin: 0 0 0.2rem; font-size: 1.5rem; }
+    .sub { margin: 0 0 1.5rem; color: var(--muted); font-size: 0.95rem; }
+
+    fieldset { margin: 0 0 1.1rem; padding: 0; border: 0; }
+    legend { padding: 0 0 0.55rem; font-size: 0.78rem; font-weight: 700;
+             letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+
+    .choices { display: grid; gap: 0.6rem; }
+    .choice {
+      display: flex; align-items: flex-start; gap: 0.75rem;
+      padding: 0.9rem 1rem; cursor: pointer;
+      background: var(--surface); border: 1px solid var(--line);
+      border-left: 3px solid var(--muted); border-radius: 10px;
+    }
+    .choice:has(input:checked) { border-left-color: var(--accent); background: var(--surface-2); }
+    .choice:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .choice input { margin: 0.3rem 0 0; accent-color: var(--accent); width: 1.1rem; height: 1.1rem; }
+    .choice b { display: block; font-size: 1rem; }
+    .choice span { display: block; color: var(--muted); font-size: 0.85rem; }
+
+    .dropzone {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 0.5rem; padding: 2.2rem 1rem; text-align: center; cursor: pointer;
+      background: var(--surface); border: 2px dashed var(--line); border-radius: 12px;
+      transition: background 140ms, border-color 140ms;
+    }
+    .dropzone.is-over { border-color: var(--accent); background: #14202e; }
+    .dropzone strong { font-size: 1.05rem; }
+    .dropzone small { color: var(--muted); }
+    .dropzone input { display: none; }
+
+    button {
+      width: 100%; min-height: 3rem; margin-top: 1rem; padding: 0 1rem;
+      font: inherit; font-size: 1rem; font-weight: 650; color: #08131f;
+      background: var(--accent); border: 0; border-radius: 10px; cursor: pointer;
+    }
+    button:disabled { opacity: 0.4; cursor: default; }
+
+    ul.queue { margin: 1rem 0 0; padding: 0; list-style: none; }
+    .item {
+      display: flex; align-items: center; gap: 0.6rem;
+      padding: 0.6rem 0.75rem; margin-bottom: 0.45rem;
+      background: var(--surface); border: 1px solid var(--line);
+      border-left: 3px solid var(--muted); border-radius: 8px; font-size: 0.9rem;
+    }
+    .item.is-ok { border-left-color: var(--good); }
+    .item.is-bad { border-left-color: var(--bad); }
+    .item .name { flex: 1 1 auto; min-width: 0; overflow: hidden;
+                  text-overflow: ellipsis; white-space: nowrap; }
+    .item .state { flex: none; color: var(--muted); font-size: 0.82rem; }
+    .item.is-ok .state { color: var(--good); }
+    .item.is-bad .state { color: var(--bad); }
+
+    .note { margin-top: 1.6rem; padding-top: 1rem; border-top: 1px solid var(--line);
+            color: var(--muted); font-size: 0.85rem; }
+    .note code { color: var(--ink-2); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Post to the Team Dashboard</h1>
+    <p class="sub">Your file appears on the TV within a second. No login, no file share.</p>
+
+    <form id="form">
+      <fieldset>
+        <legend>Where should it go?</legend>
+        <div class="choices">
+          <label class="choice">
+            <input type="radio" name="destination" value="updates" checked />
+            <span>
+              <b>Team Updates</b>
+              <span>Your project or your own weekly update.</span>
+            </span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="destination" value="takeaways" />
+            <span>
+              <b>Meeting Takeaways</b>
+              <span>Notes, decisions and actions from a meeting.</span>
+            </span>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Your file</legend>
+        <label class="dropzone" id="dropzone">
+          <strong id="dz-title">Tap to choose a file</strong>
+          <small id="dz-hint">or drag it here &middot; Word, PDF, Markdown or text &middot; up to 25 MB</small>
+          <input type="file" id="file" multiple
+                 accept=".docx,.pdf,.md,.markdown,.txt" />
+        </label>
+      </fieldset>
+
+      <button type="submit" id="submit" disabled>Post to the wall</button>
+    </form>
+
+    <ul class="queue" id="queue"></ul>
+
+    <p class="note">
+      Newest file shows first, and the panel rotates through everything in the
+      folder. To replace something, post the new version &mdash; the old one keeps
+      its own date, so name files clearly (<code>Platform - week 31.docx</code>).
+    </p>
+  </main>
+
+  <script type="module">
+    const form = document.getElementById('form');
+    const input = document.getElementById('file');
+    const zone = document.getElementById('dropzone');
+    const title = document.getElementById('dz-title');
+    const hint = document.getElementById('dz-hint');
+    const submit = document.getElementById('submit');
+    const queue = document.getElementById('queue');
+
+    let files = [];
+
+    function setFiles(list) {
+      files = Array.from(list);
+      submit.disabled = files.length === 0;
+      if (!files.length) {
+        title.textContent = 'Tap to choose a file';
+        hint.textContent = 'or drag it here · Word, PDF, Markdown or text · up to 25 MB';
+        return;
+      }
+      title.textContent = files.length === 1 ? files[0].name : `${files.length} files ready`;
+      hint.textContent = 'Tap "Post to the wall" below';
+    }
+
+    input.addEventListener('change', () => setFiles(input.files));
+
+    // Drag and drop, for the laptop half of the team.
+    ['dragenter', 'dragover'].forEach((type) =>
+      zone.addEventListener(type, (event) => {
+        event.preventDefault();
+        zone.classList.add('is-over');
+      }),
+    );
+    ['dragleave', 'drop'].forEach((type) =>
+      zone.addEventListener(type, () => zone.classList.remove('is-over')),
+    );
+    zone.addEventListener('drop', (event) => {
+      event.preventDefault();
+      setFiles(event.dataTransfer.files);
+    });
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const destination = form.destination.value;
+      submit.disabled = true;
+      submit.textContent = 'Posting…';
+
+      for (const file of files) {
+        const row = document.createElement('li');
+        row.className = 'item';
+        const name = document.createElement('span');
+        name.className = 'name';
+        name.textContent = file.name;
+        const state = document.createElement('span');
+        state.className = 'state';
+        state.textContent = 'Sending…';
+        row.append(name, state);
+        queue.prepend(row);
+
+        const body = new FormData();
+        body.append('destination', destination);
+        body.append('file', file);
+
+        try {
+          const response = await fetch('/api/upload', { method: 'POST', body });
+          const result = await response.json();
+          if (result.ok) {
+            row.classList.add('is-ok');
+            name.textContent = result.filename;
+            state.textContent = `On the wall · ${result.destination}`;
+          } else {
+            row.classList.add('is-bad');
+            state.textContent = result.detail;
+          }
+        } catch {
+          row.classList.add('is-bad');
+          state.textContent = 'No connection to the dashboard.';
+        }
+      }
+
+      setFiles([]);
+      input.value = '';
+      submit.textContent = 'Post to the wall';
+    });
+  </script>
+</body>
+</html>

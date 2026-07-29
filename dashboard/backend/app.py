@@ -10,11 +10,11 @@ from pathlib import Path
 from typing import Any, AsyncIterator
 from zoneinfo import ZoneInfo
 
-from fastapi import Body, FastAPI, Request
+from fastapi import Body, FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import session
+from . import session, uploads
 from .config import Settings, load_settings
 from .hub import EventHub
 from .sources import documents, projects
@@ -138,7 +138,35 @@ async def get_config() -> dict[str, Any]:
         "timezone": settings.timezone,
         "rotation_seconds": settings.rotation_seconds,
         "calendar_configured": bool(settings.calendar_ics_urls),
+        "drop_url": _drop_url(),
     }
+
+
+def _drop_url() -> str:
+    """The address the team types to post files, or "" when LAN-invisible.
+
+    Bound to loopback the wall is only reachable from itself, so advertising a
+    link would be a lie. Bound to 0.0.0.0 we look up this machine's own LAN
+    address, because "0.0.0.0" is not something anyone can type.
+    """
+    import socket
+
+    host = settings.host
+    port = settings.port
+    if host not in ("0.0.0.0", "::"):
+        return ""
+
+    try:
+        # Connecting a UDP socket picks the interface that reaches the LAN,
+        # without sending a packet.
+        probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        probe.settimeout(0.2)
+        probe.connect(("192.168.1.1", 9))
+        address = probe.getsockname()[0]
+        probe.close()
+    except OSError:
+        address = socket.gethostname()
+    return f"http://{address}:{port}/drop"
 
 
 @app.get("/api/takeaways")
@@ -243,6 +271,52 @@ async def toggle_milestone(
     if result.ok:
         hub.publish("content", {"channel": "projects"})
     return JSONResponse(result.as_dict(), status_code=200 if result.ok else 409)
+
+
+# --------------------------------------------------------------------------- #
+# Uploads -- reachable from the LAN so the team can post without a file share
+# --------------------------------------------------------------------------- #
+@app.post("/api/upload")
+async def upload(
+    destination: str = Form(...), file: UploadFile = File(...)
+) -> JSONResponse:
+    """Take a file from the drop page and put it in a watched folder.
+
+    Intentionally not loopback-only: posting a document is the whole point of
+    the page, and it is additive and reversible. Control endpoints that stop
+    the wall or rewrite the board stay restricted to the display itself.
+    """
+    folders = {
+        "takeaways": settings.takeaways_dir,
+        "updates": settings.updates_dir,
+    }
+    folder = folders.get(destination)
+    if folder is None:
+        return JSONResponse(
+            {"ok": False, "detail": "Pick where the file should go."}, status_code=400
+        )
+
+    payload = await file.read()
+    result = await asyncio.to_thread(
+        uploads.store, folder, file.filename or "", payload, destination
+    )
+    if result.ok:
+        hub.publish("content", {"channel": destination})
+    return JSONResponse(
+        {
+            "ok": result.ok,
+            "detail": result.detail,
+            "filename": result.filename,
+            "destination": result.destination,
+        },
+        status_code=200 if result.ok else 400,
+    )
+
+
+@app.get("/drop")
+async def drop_page() -> FileResponse:
+    """The page the team opens to post files. Linked from the wall's QR."""
+    return FileResponse(FRONTEND_DIR / "drop.html", headers={"Cache-Control": "no-store"})
 
 
 @app.get("/api/news")

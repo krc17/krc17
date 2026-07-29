@@ -62,6 +62,29 @@ The server starts hidden and a dedicated Edge window opens full-screen on the TV
 
 Logs land in `dashboard.log` and `dashboard.stdout.log` next to the app.
 
+### The drop page -- how the team posts (recommended)
+
+Set `DASHBOARD_HOST=0.0.0.0` in `dashboard.env` and restart. Anyone on the
+office network then opens **`http://<tv-pc-name>:8770/drop`** in any browser,
+picks a destination, drags a file in, and it is on the wall within a second.
+
+No file share to map, no login, nothing to install. The dashboard prints this
+address on itself, under Team Updates, so nobody has to be told it twice.
+
+Hand out `docs/Team-Dashboard-One-Pager.pdf` -- a single printable page
+covering posting, what reads well on a wall, the project board and the
+blackboard. Pin one by the TV, email the rest.
+
+**What the drop page accepts:** `.docx`, `.pdf`, `.md`, `.txt`, up to 25 MB.
+Filenames are rebuilt from safe characters, path traversal is refused, and a
+repeat filename is kept alongside the original rather than overwriting it.
+
+**Trust model:** uploads are allowed from the LAN because that is the entire
+point; a posted document is additive and reversible. The endpoints that stop
+the wall or rewrite the project board stay loopback-only, so a browser at
+someone's desk can post files but cannot move cards or shut the display down.
+There is no authentication, so keep this on a trusted network.
+
 ### Letting the team drop files from their own desks
 
 By default the dashboard reads the `data\` folder beside the app. Point it at a

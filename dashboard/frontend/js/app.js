@@ -142,6 +142,19 @@ function moveCard(cardId, status) {
   return mutate(`/api/projects/${encodeURIComponent(cardId)}/status`, { status, cardId });
 }
 
+/**
+ * Put the posting address on the wall itself. Nobody remembers a URL they were
+ * told once in a meeting; the screen they already look at can just show it.
+ * Blank when bound to loopback, where no such address exists.
+ */
+function showDropUrl(url) {
+  const node = document.getElementById('drop-url');
+  if (!node) return;
+  if (!url) { node.hidden = true; return; }
+  node.textContent = `Add files: ${url.replace(/^https?:\/\//, '')}`;
+  node.hidden = false;
+}
+
 let toastTimer = null;
 function toast(message) {
   const node = document.getElementById('toast');
@@ -201,6 +214,7 @@ async function bootstrap() {
   try {
     const state = await getJSON('/api/state');
     timePanel.configure(state.config, state.now);
+    showDropUrl(state.config.drop_url);
     panels.takeaways.setRotation(state.config.rotation_seconds);
     panels.updates.setRotation(state.config.rotation_seconds);
     panels.takeaways.render(state.takeaways);

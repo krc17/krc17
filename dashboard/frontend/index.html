@@ -50,11 +50,14 @@
 
         <!-- Time, calendar, agenda -->
         <aside class="panel panel--agenda" id="panel-agenda" aria-labelledby="agenda-title">
-          <div class="clock">
-            <p class="clock__time" id="clock-time">--:--</p>
-            <p class="clock__meta"><span id="clock-day">—</span> · <span id="clock-zone">—</span></p>
-          </div>
-          <div class="calendar" id="calendar" aria-label="Month calendar"></div>
+          <header class="agenda-head">
+            <div class="clock">
+              <p class="clock__time" id="clock-time">--:--</p>
+              <p class="clock__meta"><span id="clock-day">—</span> · <span id="clock-zone">—</span></p>
+            </div>
+            <button class="tool tool--icon" data-expand="panel-agenda" aria-label="Expand calendar">⤢</button>
+          </header>
+          <div class="calendar" id="calendar" aria-label="Month calendar. Tap a day to see its schedule."></div>
           <h2 class="panel__title panel__title--inline" id="agenda-title">Up next</h2>
           <ol class="agenda" id="agenda-list"></ol>
         </aside>
@@ -150,6 +153,9 @@
 
   <!-- Card detail. Built entirely in JS from the tapped card. -->
   <div class="sheet-backdrop" id="card-sheet" hidden></div>
+
+  <!-- Day schedule. Built from the tapped calendar day. -->
+  <div class="sheet-backdrop" id="day-sheet" hidden></div>
 
   <!-- Transient message for a refused or failed board write. -->
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>

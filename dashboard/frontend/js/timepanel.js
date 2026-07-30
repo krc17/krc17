@@ -4,23 +4,34 @@
  * The clock is anchored to the server's time once at startup and then advanced
  * locally — a TV that has been powered off for a month often boots with a badly
  * drifted RTC, and the wall should not be the thing that is wrong.
+ *
+ * The month grid does double duty. Compact, each day is a number with a dot
+ * when it has events. Expanded (the panel's ⤢ button), the same cells grow and
+ * show event chips inline, so the full screen is a real month view. Tapping any
+ * day of the current month opens a sheet with that day's schedule — a tap is
+ * the only gesture here, so there is nothing to disambiguate.
  */
 
 const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MAX_AGENDA_ITEMS = 6;
+const MAX_CHIPS_PER_DAY = 3;
 
 export class TimePanel {
-  constructor({ time, day, zone, calendar, agenda }) {
+  constructor({ time, day, zone, calendar, agenda, daySheet }) {
     this.timeEl = time;
     this.dayEl = day;
     this.zoneEl = zone;
     this.calendarEl = calendar;
     this.agendaEl = agenda;
+    this.daySheet = daySheet;
 
     this.timezone = undefined;
     this.offsetMs = 0;
     this.events = [];
     this.renderedDay = null;
+
+    this.#bindDayInteraction();
+    this.#bindSheet();
   }
 
   configure(config, now) {
@@ -36,6 +47,8 @@ export class TimePanel {
     this.events = agenda?.events ?? [];
     this.renderAgenda();
     this.renderCalendar(this.now());
+    // A day sheet left open should reflect a fresh calendar pull.
+    if (this.openDayKey) this.openDay(this.openDayKey);
   }
 
   start() {
@@ -83,32 +96,159 @@ export class TimePanel {
     const first = new Date(Date.UTC(year, month - 1, 1));
     const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
     const leading = (first.getUTCDay() + 6) % 7; // Monday-first grid
-    const eventDays = new Set(this.events.map((event) => event.date));
+    const byDay = this.#eventsByDay();
 
     const cells = DOW.map((label) => element('div', 'calendar__dow', label));
 
     const previousMonthDays = new Date(Date.UTC(year, month - 1, 0)).getUTCDate();
     for (let i = leading; i > 0; i -= 1) {
-      cells.push(element('div', 'calendar__day calendar__day--muted', String(previousMonthDays - i + 1)));
+      cells.push(this.#mutedCell(previousMonthDays - i + 1));
     }
 
     for (let day = 1; day <= daysInMonth; day += 1) {
       const key = `${year}-${pad(month)}-${pad(day)}`;
-      const classes = ['calendar__day'];
-      if (key === todayKey) classes.push('calendar__day--today');
-      if (eventDays.has(key)) classes.push('calendar__day--has-events');
-      const cell = element('div', classes.join(' '), String(day));
-      if (key === todayKey) cell.setAttribute('aria-current', 'date');
-      cells.push(cell);
+      cells.push(this.#dayCell(day, key, key === todayKey, byDay.get(key) ?? []));
     }
 
     // Fill the final week so the grid keeps a rectangular shape.
     const trailing = (7 - ((leading + daysInMonth) % 7)) % 7;
     for (let day = 1; day <= trailing; day += 1) {
-      cells.push(element('div', 'calendar__day calendar__day--muted', String(day)));
+      cells.push(this.#mutedCell(day));
     }
 
     this.calendarEl.replaceChildren(...cells);
+  }
+
+  #mutedCell(number) {
+    const cell = element('div', 'calendar__day calendar__day--muted');
+    cell.append(element('span', 'calendar__num', String(number)));
+    return cell;
+  }
+
+  /** A current-month cell: interactive, with a dot (compact) and chips (expanded). */
+  #dayCell(day, key, isToday, events) {
+    const classes = ['calendar__day'];
+    if (isToday) classes.push('calendar__day--today');
+    if (events.length) classes.push('calendar__day--has-events');
+
+    const cell = element('div', classes.join(' '));
+    cell.dataset.date = key;
+    cell.tabIndex = 0;
+    cell.setAttribute('role', 'button');
+    cell.setAttribute(
+      'aria-label',
+      `${this.#longDate(key)}${events.length ? `, ${events.length} event${events.length === 1 ? '' : 's'}` : ', no events'}`,
+    );
+    if (isToday) cell.setAttribute('aria-current', 'date');
+
+    cell.append(element('span', 'calendar__num', String(day)));
+
+    if (events.length) {
+      const list = element('div', 'calendar__events');
+      events.slice(0, MAX_CHIPS_PER_DAY).forEach((event) => {
+        const chip = element('span', `calendar__event${event.in_progress ? ' is-now' : ''}`);
+        if (!event.all_day) chip.append(element('span', 'calendar__event-time', this.#time(event.start)));
+        chip.append(document.createTextNode(event.title));
+        list.append(chip);
+      });
+      if (events.length > MAX_CHIPS_PER_DAY) {
+        list.append(element('span', 'calendar__more', `+${events.length - MAX_CHIPS_PER_DAY} more`));
+      }
+      cell.append(list);
+    }
+    return cell;
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Day schedule sheet                                                */
+  /* ---------------------------------------------------------------- */
+  #bindDayInteraction() {
+    this.calendarEl.addEventListener('click', (event) => {
+      const cell = event.target.closest('.calendar__day[data-date]');
+      if (cell) this.openDay(cell.dataset.date);
+    });
+    this.calendarEl.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      const cell = event.target.closest('.calendar__day[data-date]');
+      if (!cell) return;
+      event.preventDefault();
+      this.openDay(cell.dataset.date);
+    });
+  }
+
+  #bindSheet() {
+    if (!this.daySheet) return;
+    this.daySheet.addEventListener('click', (event) => {
+      if (event.target === this.daySheet || event.target.closest('[data-day-close]')) {
+        this.closeDay();
+      }
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !this.daySheet.hidden) {
+        // stopImmediatePropagation, not stopPropagation: the panel-collapse
+        // Escape handler is another listener on document, and only the
+        // "immediate" form stops siblings on the same element. Without it,
+        // one Escape would both close this sheet and collapse the panel.
+        event.stopImmediatePropagation();
+        this.closeDay();
+      }
+    });
+  }
+
+  openDay(key) {
+    if (!this.daySheet) return;
+    this.openDayKey = key;
+    const now = this.now();
+    const dayEvents = this.#eventsByDay().get(key) ?? [];
+
+    const panel = element('div', 'sheet sheet--day');
+
+    const head = element('div', 'day-sheet__head');
+    head.append(element('h2', 'sheet__title', this.#longDate(key)));
+    if (key === this.dateKey(now)) head.append(element('span', 'day-sheet__today', 'Today'));
+    panel.append(head);
+
+    if (!dayEvents.length) {
+      panel.append(element('p', 'day-sheet__empty',
+        this.events.length ? 'Nothing scheduled.' : 'No calendar connected.'));
+    } else {
+      const list = element('ol', 'day-schedule');
+      dayEvents.forEach((event) => {
+        const live = event.in_progress;
+        const item = element('li', `day-event${live ? ' is-now' : ''}`);
+
+        const when = element('div', 'day-event__when');
+        if (event.all_day) {
+          when.textContent = 'All day';
+        } else {
+          when.textContent = this.#time(event.start);
+          when.append(element('span', 'day-event__end', `– ${this.#time(event.end)}`));
+        }
+
+        const body = element('div', 'day-event__body');
+        body.append(element('span', 'day-event__title', event.title));
+        if (event.location) body.append(element('span', 'day-event__where', event.location));
+        if (live) body.append(element('span', 'day-event__badge', 'In progress'));
+
+        item.append(when, body);
+        list.append(item);
+      });
+      panel.append(list);
+    }
+
+    const close = element('button', 'sheet__cancel', 'Close');
+    close.type = 'button';
+    close.dataset.dayClose = '';
+    panel.append(close);
+
+    this.daySheet.replaceChildren(panel);
+    this.daySheet.hidden = false;
+  }
+
+  closeDay() {
+    if (!this.daySheet) return;
+    this.daySheet.hidden = true;
+    this.openDayKey = null;
   }
 
   /* ---------------------------------------------------------------- */
@@ -135,15 +275,7 @@ export class TimePanel {
         const item = element('li', `agenda__item${live ? ' agenda__item--now' : ''}`);
 
         const when = element('div', 'agenda__when');
-        when.textContent = live
-          ? 'Now'
-          : event.all_day
-            ? 'All day'
-            : start.toLocaleTimeString(undefined, {
-                hour: 'numeric',
-                minute: '2-digit',
-                timeZone: this.timezone,
-              });
+        when.textContent = live ? 'Now' : event.all_day ? 'All day' : this.#time(event.start);
         when.append(element('span', 'agenda__day', this.dayLabel(start, now)));
 
         const body = element('div', 'agenda__title', event.title);
@@ -167,6 +299,45 @@ export class TimePanel {
       month: 'short',
       day: 'numeric',
       timeZone: this.timezone,
+    });
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Helpers                                                           */
+  /* ---------------------------------------------------------------- */
+  #eventsByDay() {
+    // Group by calendar date, all-day first then chronological, so both the
+    // grid chips and the day sheet read in the order the day happens.
+    const map = new Map();
+    for (const event of this.events) {
+      if (!map.has(event.date)) map.set(event.date, []);
+      map.get(event.date).push(event);
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) => {
+        if (a.all_day !== b.all_day) return a.all_day ? -1 : 1;
+        return new Date(a.start) - new Date(b.start);
+      });
+    }
+    return map;
+  }
+
+  #time(iso) {
+    return new Date(iso).toLocaleTimeString(undefined, {
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZone: this.timezone,
+    });
+  }
+
+  #longDate(key) {
+    // Build from the key at noon UTC so the weekday never slips a day.
+    const date = new Date(`${key}T12:00:00Z`);
+    return date.toLocaleDateString(undefined, {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      timeZone: 'UTC',
     });
   }
 }

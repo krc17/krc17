@@ -39,7 +39,9 @@ export class CardDetail {
     });
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && !this.sheet.hidden) {
-        event.stopPropagation();
+        // Immediate, so Escape closing this sheet does not also collapse an
+        // expanded panel behind it (both handlers live on document).
+        event.stopImmediatePropagation();
         this.close();
       }
     });

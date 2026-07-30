@@ -46,6 +46,7 @@ const timePanel = new TimePanel({
   zone: document.getElementById('clock-zone'),
   calendar: document.getElementById('calendar'),
   agenda: document.getElementById('agenda-list'),
+  daySheet: document.getElementById('day-sheet'),
 });
 
 const ticker = new Ticker({

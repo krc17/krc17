@@ -95,19 +95,24 @@ class AgendaService:
 
     def _parse(self, payload: bytes) -> list[dict[str, Any]]:
         calendar = Calendar.from_ical(payload)
-        window_start = datetime.now(self._tz)
-        window_end = window_start + self._horizon
+        now = datetime.now(self._tz)
+        # Start the window at midnight so tapping "today" on the wall shows the
+        # whole day, this morning's standup included -- a schedule review, not
+        # just what is left. The agenda's "up next" list filters to the future
+        # on the client, so it stays forward-looking regardless.
+        window_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        window_end = now + self._horizon
         events: list[dict[str, Any]] = []
 
         for component in calendar.walk("VEVENT"):
             try:
-                events.extend(self._expand(component, window_start, window_end))
+                events.extend(self._expand(component, now, window_start, window_end))
             except Exception as exc:  # one bad VEVENT must not drop the feed
                 log.debug("skipping event: %s", exc)
         return events
 
     def _expand(
-        self, component: Any, window_start: datetime, window_end: datetime
+        self, component: Any, now: datetime, window_start: datetime, window_end: datetime
     ) -> list[dict[str, Any]]:
         raw_start = component.get("DTSTART")
         if raw_start is None:
@@ -144,7 +149,7 @@ class AgendaService:
                     "start": occurrence.astimezone(self._tz).isoformat(timespec="minutes"),
                     "end": end.astimezone(self._tz).isoformat(timespec="minutes"),
                     "date": occurrence.astimezone(self._tz).date().isoformat(),
-                    "in_progress": occurrence <= window_start <= end,
+                    "in_progress": occurrence <= now <= end,
                 }
             )
         return occurrences

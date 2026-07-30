@@ -48,7 +48,9 @@ export class SessionControl {
 
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && !this.sheet.hidden) {
-        event.stopPropagation();   // don't also collapse an expanded panel
+        // Immediate: stopPropagation alone would not stop the panel-collapse
+        // Escape handler, which is another listener on document.
+        event.stopImmediatePropagation();
         this.close();
       }
     });

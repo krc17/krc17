@@ -354,7 +354,15 @@ body {
 /* =========================================================================
    Clock, calendar, agenda
    ========================================================================= */
-.clock { flex: none; }
+.agenda-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex: none;
+}
+
+.clock { flex: 1 1 auto; min-width: 0; }
 
 .clock__time {
   margin: 0;
@@ -400,6 +408,14 @@ body {
   color: var(--ink-2);
 }
 
+/* Current-month days are tappable — a tap opens that day's schedule. */
+.calendar__day[data-date] { cursor: pointer; }
+.calendar__day[data-date]:hover { background: var(--surface-2); }
+.calendar__day--today[data-date]:hover { background: var(--series-1); }
+.calendar__day[data-date]:focus-visible { outline: 2px solid var(--series-1); outline-offset: -1px; }
+
+.calendar__num { line-height: 1; }
+
 .calendar__day--muted { color: #4b4a47; }
 
 .calendar__day--today {
@@ -408,11 +424,14 @@ body {
   background: var(--series-1);
 }
 
-/* A dot marks days with events — never colour alone; the agenda lists them. */
+/* A dot marks days with events — never colour alone; the agenda lists them.
+   Hidden once the panel expands, where the event chips carry the same signal. */
 .calendar__day--has-events::after {
   content: "";
   position: absolute;
   bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
   width: 4px;
   height: 4px;
   border-radius: 50%;
@@ -420,6 +439,85 @@ body {
 }
 
 .calendar__day--today.calendar__day--has-events::after { background: var(--plane); }
+
+/* Event chips: never rendered in the compact grid, revealed when expanded. */
+.calendar__events { display: none; }
+.calendar__more { display: none; }
+
+/* =========================================================================
+   Expanded calendar — the ⤢ full-screen month view
+   ========================================================================= */
+.panel--agenda.is-expanded { z-index: 60; }
+
+.panel--agenda.is-expanded .calendar {
+  flex: 1 1 auto;
+  min-height: 0;
+  grid-auto-rows: 1fr;
+  gap: 4px;
+  margin: 1rem 0;
+}
+
+.panel--agenda.is-expanded .calendar__dow { font-size: 0.9rem; }
+
+.panel--agenda.is-expanded .calendar__day {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  aspect-ratio: auto;                 /* fill the row height instead of forcing square */
+  padding: 0.35rem 0.4rem;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.panel--agenda.is-expanded .calendar__num { align-self: flex-start; font-weight: 600; }
+.panel--agenda.is-expanded .calendar__day--today .calendar__num { color: var(--plane); }
+
+/* In the big view the dot is redundant — the chips below say the same thing. */
+.panel--agenda.is-expanded .calendar__day--has-events::after { display: none; }
+
+.panel--agenda.is-expanded .calendar__events {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 0.3rem;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.panel--agenda.is-expanded .calendar__event {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border-left: 2px solid var(--series-1);
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.panel--agenda.is-expanded .calendar__event.is-now {
+  border-left-color: var(--status-good);
+  color: var(--ink);
+}
+
+.calendar__event-time { flex: none; font-weight: 650; font-variant-numeric: tabular-nums; }
+
+.panel--agenda.is-expanded .calendar__more {
+  display: block;
+  padding: 0 0.35rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+/* The clock shrinks a touch when expanded so the month owns the space. */
+.panel--agenda.is-expanded .clock__time { font-size: clamp(2.4rem, 4vw, 3.6rem); }
+.panel--agenda.is-expanded .agenda { max-height: 22vh; }
 
 .agenda {
   flex: 1 1 auto;
@@ -1441,3 +1539,76 @@ body.is-card-dragging .pages { overflow-x: hidden; }
 }
 
 .drop-url[hidden] { display: none; }
+
+/* =========================================================================
+   Day schedule sheet — tapping a calendar day
+   ========================================================================= */
+.sheet--day { width: min(30rem, 100%); max-height: 86vh; overflow-y: auto; }
+
+.day-sheet__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: 0.9rem;
+}
+
+.day-sheet__today {
+  padding: 0.1rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--plane);
+  background: var(--series-1);
+  border-radius: 20px;
+}
+
+.day-sheet__empty {
+  margin: 0.5rem 0 0;
+  padding: 1.2rem 0;
+  text-align: center;
+  color: var(--muted);
+}
+
+.day-schedule { margin: 0; padding: 0; list-style: none; }
+
+.day-event {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr;
+  gap: 0.75rem;
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--hairline);
+}
+
+.day-event:first-child { border-top: 0; }
+
+.day-event__when {
+  font-size: 0.9rem;
+  font-weight: 650;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.day-event__end {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.day-event__body { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.day-event__title { font-size: 0.98rem; color: var(--ink); }
+.day-event__where { font-size: 0.82rem; color: var(--muted); }
+
+.day-event__badge {
+  align-self: flex-start;
+  margin-top: 0.2rem;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 650;
+  color: var(--plane);
+  background: var(--status-good);
+  border-radius: 5px;
+}
+
+.day-event.is-now .day-event__when { color: var(--status-good); }

@@ -24,7 +24,7 @@ second later — nobody has to touch the TV.
 | **Team Meeting Takeaways** | Every `.docx` / `.pdf` / `.md` / `.txt` in `data\meeting-takeaways`. Newest first, auto-rotating. |
 | **Team Updates** | Same, from `data\team-updates`. One file per project or per person works well. |
 | **Project Tracking** | `data\projects\projects.yaml` — a Kanban board with owners, priority, due dates, health and progress. |
-| **Date / time / calendar** | The clock, a month grid, and the next few events from your calendar's ICS link. |
+| **Date / time / calendar** | The clock, a month grid, and the next few events from your calendar's ICS link. Tap ⤢ for a full-screen month, or tap any day for its schedule. |
 | **News ticker** | RSS world-news feeds, refreshed every 10 minutes. |
 
 ---

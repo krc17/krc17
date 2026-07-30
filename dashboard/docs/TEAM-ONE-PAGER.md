@@ -7,7 +7,7 @@ project board. You keep it current. It takes about a minute a week.
 
 ## Post a file
 
-**Open `http://TV-PC-NAME:8770/drop` on any machine on the office network.**
+**Open `http://PerimeterConf:8770/drop` on any machine on the office network.**
 Phone, laptop, desk PC — anything with a browser. No login, no shared drive.
 
 1. Pick **Team Updates** or **Meeting Takeaways**

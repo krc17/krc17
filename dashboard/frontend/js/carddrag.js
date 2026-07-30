@@ -118,7 +118,14 @@ export class CardDrag {
       this.holdTimer = null;
       const tapped = this.card;
       this.card = null;
-      if (tapped) this.onTap?.(tapped.dataset.cardId);
+      if (tapped) {
+        // A touch tap fires a trailing click after pointerup. We open the sheet
+        // here on pointerup, so that click would then land on the just-opened
+        // backdrop and close it instantly -- the "flash open then vanish" bug.
+        // Swallow the one trailing click before opening.
+        this.#swallowNextClick();
+        this.onTap?.(tapped.dataset.cardId);
+      }
       return;
     }
     if (!this.dragging) return;
@@ -128,18 +135,25 @@ export class CardDrag {
     const to = this.column?.dataset.column;
     this.#abort();
 
-    // A drop still emits a click. Swallow that one, or the detail sheet opens
-    // on top of the card the user just finished moving.
-    window.addEventListener(
-      'click',
-      (click) => {
-        click.stopPropagation();
-        click.preventDefault();
-      },
-      { capture: true, once: true },
-    );
+    // A drop also emits a trailing click; swallow it too, or it would open the
+    // detail sheet on top of the card just moved.
+    this.#swallowNextClick();
 
     if (to && to !== from) this.onMove?.(cardId, to);
+  }
+
+  /** Consume exactly the next click anywhere — the phantom one a touch emits. */
+  #swallowNextClick() {
+    const swallow = (click) => {
+      click.stopPropagation();
+      click.preventDefault();
+      window.removeEventListener('click', swallow, true);
+      clearTimeout(timer);
+    };
+    window.addEventListener('click', swallow, { capture: true });
+    // If no trailing click arrives (rare devices), disarm so we never eat a
+    // later, real click.
+    const timer = setTimeout(() => window.removeEventListener('click', swallow, true), 700);
   }
 
   #abort() {

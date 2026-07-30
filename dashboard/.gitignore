@@ -11,11 +11,11 @@ dashboard.env
 dashboard.log
 dashboard.stdout.log
 .dashboard.pid
-data/blackboard/board.json
 
-# Team content: keep the folders, ignore what gets dropped in them.
-# Delete these rules if you'd rather version the team's documents.
-data/meeting-takeaways/*
-data/team-updates/*
-!data/meeting-takeaways/*.md
-!data/team-updates/*.md
+# Team content: this whole tree is created and maintained on the running
+# machine and is NEVER shipped in an update, so a new build cannot overwrite
+# the project board or anything the team has posted. Fresh installs seed it
+# from samples/ (see Install-Dashboard.ps1). Only the empty-folder markers
+# are tracked.
+data/*/*
+!data/*/.gitkeep

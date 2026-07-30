@@ -47,6 +47,21 @@ If you don't have Python: `winget install --id Python.Python.3.12 --source winge
 
 The server starts hidden and a dedicated Edge window opens full-screen on the TV.
 
+On a fresh install the `data\` folders start empty, so `Install.bat` seeds them
+with the examples in `samples\` — the wall looks alive on first run. It only
+ever seeds a folder that is empty, so it never overwrites real content.
+
+### Updating to a new build
+
+Unzip the new build over the `dashboard` folder and run `Start Dashboard.bat`.
+
+**Your content is safe.** The `data\` folder — the project board, everything the
+team has posted — and your `dashboard.env` are yours; they live only on this
+machine and are never part of a build, so an update cannot overwrite them. A
+build only replaces the program (the `backend\`, `frontend\`, `windows\` and
+`samples\` folders). You do not need to re-run `Install.bat` unless a release
+note says a new dependency was added.
+
 **Everyday controls**
 
 | Action | How |
@@ -166,6 +181,12 @@ Only `title` is required. Everything else has a sensible fallback:
 Cards sort most-urgent-first inside each column: overdue, then priority, then
 due date. You can split projects across several `.yaml`/`.json` files in the
 folder; they merge into one board.
+
+> The first install copies `samples\projects\projects.yaml` into
+> `data\projects\` as a starting point. After that the file is yours — edit it
+> freely, or manage the board entirely from the touchscreen. Updates never
+> touch it. To start over from the example, delete your `data\projects\`
+> contents and re-run `Install.bat`.
 
 #### Moving cards on the TV
 

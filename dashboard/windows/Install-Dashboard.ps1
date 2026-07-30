@@ -127,6 +127,24 @@ foreach ($folder in 'meeting-takeaways', 'team-updates', 'projects', 'blackboard
 }
 Write-Ok 'Content folders ready'
 
+# Seed the example content on a first install so the wall looks alive, but only
+# into folders that are empty. Anything the team has already put here -- the
+# project board, posted documents -- is never touched, so re-running Install or
+# unzipping a new build cannot overwrite their work.
+$samples = Join-Path $AppRoot 'samples'
+if (Test-Path $samples) {
+    foreach ($folder in 'projects', 'team-updates', 'meeting-takeaways') {
+        $src = Join-Path $samples $folder
+        $dst = Join-Path $AppRoot "data\$folder"
+        if (-not (Test-Path $src)) { continue }
+        $existing = @(Get-ChildItem $dst -File -ErrorAction SilentlyContinue)
+        if ($existing.Count -eq 0) {
+            Copy-Item (Join-Path $src '*') $dst -ErrorAction SilentlyContinue
+            Write-Note "Seeded example content into data\$folder"
+        }
+    }
+}
+
 # --------------------------------------------------------------------------- #
 # 4. Autostart at logon
 # --------------------------------------------------------------------------- #

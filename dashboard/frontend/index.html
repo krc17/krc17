@@ -11,7 +11,7 @@
 <body>
   <div class="wall" id="wall">
 
-    <!-- Two swipeable pages. The ticker and pager sit outside so they persist. -->
+    <!-- Three swipeable pages. The ticker and pager sit outside so they persist. -->
     <div class="pages" id="pages">
 
       <!-- ══ Page 1 — Overview ═══════════════════════════════════════ -->
@@ -69,15 +69,17 @@
           <h2 class="panel__title panel__title--inline" id="agenda-title">Up next</h2>
           <ol class="agenda" id="agenda-list"></ol>
         </aside>
+      </section>
 
-        <!-- Project tracking -->
+      <!-- ══ Page 2 — Project tracking ═══════════════════════════════ -->
+      <section class="page page--projects" id="page-projects" aria-label="Project tracking">
         <section class="panel panel--projects" id="panel-projects" aria-labelledby="projects-title">
           <header class="panel__head">
+            <button class="tool tool--back" data-goto-page="0" aria-label="Back to overview">
+              <span aria-hidden="true">‹</span> Overview
+            </button>
             <h2 class="panel__title" id="projects-title">Project Tracking</h2>
             <div class="stat-row" id="projects-stats"></div>
-            <div class="panel__controls">
-              <button class="tool tool--icon" data-expand="panel-projects" aria-label="Expand board">⤢</button>
-            </div>
           </header>
           <div class="board-scroll">
             <div class="kanban" id="kanban"></div>
@@ -86,7 +88,7 @@
         </section>
       </section>
 
-      <!-- ══ Page 2 — Area coverage ══════════════════════════════════ -->
+      <!-- ══ Page 3 — Area coverage ══════════════════════════════════ -->
       <section class="page page--coverage" id="page-coverage" aria-label="Area coverage">
         <section class="panel panel--coverage" id="panel-coverage" aria-labelledby="coverage-title">
           <header class="panel__head">
@@ -112,6 +114,9 @@
           <span class="pager__label">Overview</span>
         </button>
         <button class="pager__dot" data-goto-page="1">
+          <span class="pager__label">Projects</span>
+        </button>
+        <button class="pager__dot" data-goto-page="2">
           <span class="pager__label">Coverage</span>
         </button>
       </nav>

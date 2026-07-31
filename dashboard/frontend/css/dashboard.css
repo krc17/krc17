@@ -113,29 +113,29 @@ body {
 }
 
 /* --- Page 1: overview ---------------------------------------------------- */
-/* The document panels own the tall middle band: they run from 32% to 69% of
-   the page height, while the agenda and the project board keep their heights. */
+/* Three columns, full page height: with the project board moved to its own
+   page, the documents and the agenda run the whole height of the wall. */
 .page--overview {
   display: grid;
   gap: var(--gap);
   grid-template-columns: minmax(0, 1.45fr) minmax(0, 1.15fr) minmax(0, 0.82fr);
-  grid-template-rows: minmax(0, 2.23fr) minmax(0, 1fr);
-  grid-template-areas:
-    "takeaways updates  agenda"
-    "projects  projects projects";
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: "takeaways updates agenda";
 }
 
 #panel-takeaways { grid-area: takeaways; }
 #panel-updates   { grid-area: updates; }
 .panel--agenda   { grid-area: agenda; }
-.panel--projects { grid-area: projects; }
 
-/* --- Page 2: area coverage ----------------------------------------------- */
+/* --- Pages 2 & 3: project board and area coverage ------------------------ */
+/* Each is a single panel that fills its page. */
+.page--projects,
 .page--coverage {
   display: flex;
   padding-right: 1px;               /* keeps the snap edge crisp at some zooms */
 }
 
+.page--projects .panel--projects,
 .page--coverage .panel--coverage {
   flex: 1 1 auto;
   min-width: 0;
@@ -148,7 +148,7 @@ body {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: none;
     grid-auto-rows: minmax(30vh, auto);
-    grid-template-areas: "takeaways" "updates" "agenda" "projects";
+    grid-template-areas: "takeaways" "updates" "agenda";
     overflow-y: auto;
   }
 }

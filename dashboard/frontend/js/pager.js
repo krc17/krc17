@@ -11,7 +11,7 @@
  * its header, the dots below, and the arrow keys.
  */
 
-const PAGE_NAMES = ['overview', 'coverage'];
+const PAGE_NAMES = ['overview', 'projects', 'coverage'];
 
 export class Pager {
   constructor({ scroller, dots }) {
@@ -78,6 +78,7 @@ export class Pager {
       else if (event.key === 'ArrowLeft' || event.key === 'PageUp') this.previous();
       else if (event.key === '1') this.goTo(0);
       else if (event.key === '2') this.goTo(1);
+      else if (event.key === '3') this.goTo(2);
       else return;
       event.preventDefault();
     });

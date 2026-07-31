@@ -1,14 +1,17 @@
 # Engineering Team Dashboard
 
-A full-screen wall display for a touchscreen TV, laid out as two swipeable pages.
+A full-screen wall display for a touchscreen TV, laid out as three swipeable pages.
 
 **Page 1 -- Overview:** meeting takeaways and team updates pulled straight out of
-folders, a Kanban project board, and the date/time with calendar and agenda.
-**Page 2 -- Area Coverage:** a full-screen board of who is covering which area
+folders, and the date/time with calendar and agenda -- each running the full
+height of the wall.
+**Page 2 -- Projects:** a full-screen Kanban board with owners, priority, due
+dates, health and progress.
+**Page 3 -- Area Coverage:** a full-screen board of who is covering which area
 today; drag an engineer between areas with a finger.
 
-Swipe left and right to move between them, or tap **Overview** / **Coverage**
-in the bottom bar. A scrolling world-news ticker runs across both pages.
+Swipe left and right to move between them, or tap **Overview** / **Projects** /
+**Coverage** in the bottom bar. A scrolling world-news ticker runs across all pages.
 
 Everything updates by itself. Drop a Word doc in a folder and it is on the wall a
 second later — nobody has to touch the TV.
@@ -68,7 +71,7 @@ note says a new dependency was added.
 | Action | How |
 |---|---|
 | Start it | `Start Dashboard.bat`, or the *Team Dashboard* desktop shortcut |
-| Change page | Swipe left/right, tap **Overview** / **Coverage**, or press `←` `→` (or `1` / `2`) |
+| Change page | Swipe left/right, tap **Overview** / **Projects** / **Coverage**, or press `←` `→` (or `1` / `2` / `3`) |
 | Minimise, close, or shut down | Tap the **power icon** at the right of the bottom bar |
 | Leave kiosk mode by keyboard | `Ctrl+W` or `Alt+F4` on the TV |
 | Stop the server from a terminal | `windows\Stop-Dashboard.ps1` |
@@ -255,7 +258,7 @@ and the timestamp on the right turns amber rather than the ticker going blank.
 
 ## Area coverage
 
-Page 2 is the daily coverage board: each engineer is a card, each area is a
+Page 3 is the daily coverage board: each engineer is a card, each area is a
 column. Drag a card to the area that person is covering today and the change
 saves itself; any other screen showing the dashboard updates within a second.
 

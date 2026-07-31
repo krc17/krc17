@@ -160,7 +160,10 @@ if (Test-Path $samples) {
         $src = Join-Path $samples $folder
         $dst = Join-Path $AppRoot "data\$folder"
         if (-not (Test-Path $src)) { continue }
-        $existing = @(Get-ChildItem $dst -File -ErrorAction SilentlyContinue)
+        # .gitkeep only marks the folder as shipped-empty; it must not count as
+        # content, or the sample would never seed on a fresh install.
+        $existing = @(Get-ChildItem $dst -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -ne '.gitkeep' })
         if ($existing.Count -eq 0) {
             Copy-Item (Join-Path $src '*') $dst -ErrorAction SilentlyContinue
             Write-Note "Seeded example content into data\$folder"

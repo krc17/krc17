@@ -110,4 +110,26 @@ def load_settings() -> Settings:
         settings.coverage_dir,
     ):
         directory.mkdir(parents=True, exist_ok=True)
+
+    # First-run seed for the coverage board. Unlike the document panels, an
+    # empty coverage folder shows areas but no engineer cards and nothing to
+    # drag, which reads as broken. So if the folder holds no coverage file yet,
+    # copy the sample once. Never overwrites -- an existing file is left alone,
+    # so a team's edits are safe on every future build.
+    _seed_if_empty(settings.coverage_dir, Path(__file__).resolve().parent.parent / "samples" / "coverage")
     return settings
+
+
+def _seed_if_empty(target: Path, sample_dir: Path) -> None:
+    if not sample_dir.is_dir():
+        return
+    has_content = any(
+        item.is_file() and item.name != ".gitkeep" for item in target.iterdir()
+    )
+    if has_content:
+        return
+    import shutil
+
+    for item in sample_dir.iterdir():
+        if item.is_file() and not (target / item.name).exists():
+            shutil.copy2(item, target / item.name)

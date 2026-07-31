@@ -57,6 +57,12 @@
             </div>
             <button class="tool tool--icon" data-expand="panel-agenda" aria-label="Expand calendar">⤢</button>
           </header>
+          <div class="calendar-nav" id="calendar-nav">
+            <button class="cal-nav__btn" data-cal-prev aria-label="Previous month">‹</button>
+            <span class="cal-nav__label" data-cal-label aria-live="polite"></span>
+            <button class="cal-nav__btn" data-cal-next aria-label="Next month">›</button>
+            <button class="cal-nav__today" data-cal-today hidden>Today</button>
+          </div>
           <div class="calendar" id="calendar" aria-label="Month calendar. Tap a day to see its schedule."></div>
           <ul class="calendar-legend" id="calendar-legend" aria-label="Calendars" hidden></ul>
           <p class="calendar-status" id="calendar-status" role="status" hidden></p>

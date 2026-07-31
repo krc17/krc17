@@ -26,11 +26,14 @@ function calColor(index) {
 }
 
 export class TimePanel {
-  constructor({ time, day, zone, calendar, agenda, legend, status, daySheet }) {
+  constructor({ time, day, zone, calendar, calendarNav, agenda, legend, status, daySheet }) {
     this.timeEl = time;
     this.dayEl = day;
     this.zoneEl = zone;
     this.calendarEl = calendar;
+    this.navEl = calendarNav;
+    this.titleEl = calendarNav?.querySelector('[data-cal-label]') ?? null;
+    this.todayBtn = calendarNav?.querySelector('[data-cal-today]') ?? null;
     this.agendaEl = agenda;
     this.legendEl = legend;
     this.statusEl = status;
@@ -41,8 +44,14 @@ export class TimePanel {
     this.events = [];
     this.calendars = [];
     this.renderedDay = null;
+    // Which month the grid is showing. Null until the first render, then it
+    // tracks whatever month the user has paged to; the agenda list stays
+    // anchored to real "now" regardless.
+    this.viewYear = null;
+    this.viewMonth = null;
 
     this.#bindDayInteraction();
+    this.#bindMonthNav();
     this.#bindSheet();
   }
 
@@ -146,11 +155,13 @@ export class TimePanel {
       timeZone: this.timezone,
     });
 
-    // Repaint the month grid and agenda exactly once, when the date rolls over.
+    // Repaint the agenda and grid exactly once, when the date rolls over. The
+    // grid only follows the rollover while it is showing the current month --
+    // if the user has paged to another month, leave it where they put it.
     const key = this.dateKey(now);
     if (key !== this.renderedDay) {
       this.renderedDay = key;
-      this.renderCalendar(now);
+      if (this.#isCurrentView(now)) this.renderCalendar(now);
       this.renderAgenda();
     }
   }
@@ -164,7 +175,16 @@ export class TimePanel {
   /* ---------------------------------------------------------------- */
   renderCalendar(now) {
     const todayKey = this.dateKey(now);
-    const [year, month] = todayKey.split('-').map(Number);
+    // First render adopts the current month; after that the grid shows whatever
+    // month the user has paged to.
+    if (this.viewYear == null) {
+      const [ty, tm] = todayKey.split('-').map(Number);
+      this.viewYear = ty;
+      this.viewMonth = tm;
+    }
+    const year = this.viewYear;
+    const month = this.viewMonth;
+
     const first = new Date(Date.UTC(year, month - 1, 1));
     const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
     const leading = (first.getUTCDay() + 6) % 7; // Monday-first grid
@@ -189,6 +209,53 @@ export class TimePanel {
     }
 
     this.calendarEl.replaceChildren(...cells);
+    this.#renderMonthLabel(now);
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Month navigation                                                  */
+  /* ---------------------------------------------------------------- */
+  #bindMonthNav() {
+    if (!this.navEl) return;
+    this.navEl.addEventListener('click', (event) => {
+      if (event.target.closest('[data-cal-prev]')) this.shiftMonth(-1);
+      else if (event.target.closest('[data-cal-next]')) this.shiftMonth(1);
+      else if (event.target.closest('[data-cal-today]')) this.goToday();
+    });
+  }
+
+  shiftMonth(delta) {
+    if (this.viewYear == null) this.renderCalendar(this.now());
+    let month = this.viewMonth + delta;
+    let year = this.viewYear;
+    while (month < 1) { month += 12; year -= 1; }
+    while (month > 12) { month -= 12; year += 1; }
+    this.viewMonth = month;
+    this.viewYear = year;
+    this.renderCalendar(this.now());
+  }
+
+  goToday() {
+    const [ty, tm] = this.dateKey(this.now()).split('-').map(Number);
+    this.viewYear = ty;
+    this.viewMonth = tm;
+    this.renderCalendar(this.now());
+  }
+
+  #isCurrentView(now) {
+    if (this.viewYear == null) return true;
+    const [ty, tm] = this.dateKey(now).split('-').map(Number);
+    return this.viewYear === ty && this.viewMonth === tm;
+  }
+
+  #renderMonthLabel(now) {
+    if (this.titleEl) {
+      const label = new Date(Date.UTC(this.viewYear, this.viewMonth - 1, 1))
+        .toLocaleDateString(undefined, { month: 'long', year: 'numeric', timeZone: 'UTC' });
+      this.titleEl.textContent = label;
+    }
+    // "Today" only makes sense as a way back when you have paged away.
+    if (this.todayBtn) this.todayBtn.hidden = this.#isCurrentView(now);
   }
 
   #mutedCell(number) {

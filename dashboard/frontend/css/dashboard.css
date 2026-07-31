@@ -545,6 +545,59 @@ body {
   color: var(--status-warning);
 }
 
+/* Month navigation: arrows either side of the month name, plus a "Today" way
+   back that only shows once you have paged away from the current month. */
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.35rem 0 0.25rem;
+}
+
+.cal-nav__btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.cal-nav__btn:hover { color: var(--ink); border-color: var(--series-1); }
+.cal-nav__btn:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
+
+.cal-nav__label {
+  flex: 1 1 auto;
+  text-align: center;
+  font-size: 0.92rem;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.cal-nav__today {
+  flex: none;
+  padding: 0 0.7rem;
+  height: 2.4rem;
+  font-size: 0.76rem;
+  font-weight: 650;
+  color: var(--series-1);
+  background: transparent;
+  border: 1px solid var(--series-1);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.cal-nav__today[hidden] { display: none; }
+
+.panel--agenda.is-expanded .cal-nav__label { font-size: 1.15rem; }
+
 /* =========================================================================
    Document panels (takeaways & updates)
    ========================================================================= */

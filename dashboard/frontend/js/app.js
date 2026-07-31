@@ -45,6 +45,7 @@ const timePanel = new TimePanel({
   day: document.getElementById('clock-day'),
   zone: document.getElementById('clock-zone'),
   calendar: document.getElementById('calendar'),
+  calendarNav: document.getElementById('calendar-nav'),
   agenda: document.getElementById('agenda-list'),
   legend: document.getElementById('calendar-legend'),
   status: document.getElementById('calendar-status'),

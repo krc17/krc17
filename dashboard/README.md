@@ -261,8 +261,9 @@ saves itself; any other screen showing the dashboard updates within a second.
 
 - Areas and engineers both come from `data\coverage\coverage.yaml`, which
   documents itself at the top. Edit the file to add or rename either.
-- An engineer whose `area` is not one of the listed areas shows in the first
-  column until dragged somewhere valid, and a note appears under the board.
+- Anyone off today: leave their `area` blank, or drag their card to the
+  **Off / Unassigned** column. An unrecognised area also lands there, with a
+  note under the board so a typo is not silent.
 - The coverage page gets the whole screen. A finger dragging a card **moves**
   it rather than changing page -- nobody should flip the page mid-drag -- so use
   the **‹ Overview** button in the header, the page buttons in the bottom bar,

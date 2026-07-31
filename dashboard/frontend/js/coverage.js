@@ -38,7 +38,9 @@ export function renderCoverage(data) {
 
   board.replaceChildren(
     ...areas.map((area, index) => {
-      const accent = AREA_SLOTS[index % AREA_SLOTS.length];
+      // "Off / Unassigned" reads as not-covering, so it gets a muted accent
+      // rather than a categorical colour that would imply an area like the rest.
+      const accent = isOff(area) ? 'var(--muted)' : AREA_SLOTS[index % AREA_SLOTS.length];
       const here = engineers.filter((person) => person.area === area);
 
       const column = element('section', 'column column--coverage');
@@ -106,6 +108,10 @@ function element(tag, className, text) {
   if (className) node.className = className;
   if (text !== undefined) node.textContent = text;
   return node;
+}
+
+function isOff(area) {
+  return /off|unassigned/i.test(area);
 }
 
 function initials(name) {

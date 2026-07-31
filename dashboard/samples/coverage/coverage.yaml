@@ -7,9 +7,9 @@
 #
 #   areas       the columns, in the order they appear on the wall
 #   engineers   one entry per person: a name and the area they are covering.
-#               An engineer's area must be one of the areas above; a name with
-#               an area that is not listed shows in the first column until it is
-#               dragged somewhere valid.
+#               An engineer's area must be one of the areas above. Leave the
+#               area blank (or drag the card to "Off / Unassigned") for anyone
+#               off today; an unrecognised area also lands there.
 # ============================================================================
 
 coverage:
@@ -19,6 +19,7 @@ coverage:
     - Downtown
     - On-Call
     - Special project
+    - Off / Unassigned
   engineers:
     - name: KC
       area: Perimeter

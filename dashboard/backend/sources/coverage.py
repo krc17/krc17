@@ -28,9 +28,13 @@ log = logging.getLogger(__name__)
 SELF_WRITE_QUIET_SECONDS = 2.0
 _SOURCE_SUFFIXES = (".yaml", ".yml")
 
+# Where an engineer with no area (off today) or an unrecognised area lands, so
+# nobody ever falls off the board. Kept as the last column.
+OFF_AREA = "Off / Unassigned"
+
 # The wall shows these areas as columns, in this order, even before anyone is
 # assigned. Editing the file's own areas list overrides them.
-DEFAULT_AREAS = ["Perimeter", "HD JOE", "Downtown", "On-Call", "Special project"]
+DEFAULT_AREAS = ["Perimeter", "HD JOE", "Downtown", "On-Call", "Special project", OFF_AREA]
 
 
 @dataclass(frozen=True)
@@ -92,18 +96,21 @@ class CoverageStore:
         for entry in block.get("engineers") or []:
             if isinstance(entry, dict):
                 name = str(entry.get("name", "")).strip()
-                area = str(entry.get("area", "")).strip()
+                raw_area = entry.get("area")
+                # A null/blank area means "off today", not the literal "None".
+                area = str(raw_area).strip() if raw_area is not None else ""
             else:
                 name, area = str(entry).strip(), ""
             if not name:
                 continue
-            # An unknown or blank area lands in the first column rather than
-            # vanishing off the board -- the coverage is still visible, and a
-            # drag fixes it. Note it so a typo in the file is not silent.
+            # An unknown or blank area lands in Off / Unassigned rather than
+            # vanishing off the board -- a blank area means off today, a typo is
+            # also noted so it is not silent. Falls back to the first column if
+            # the file has no off column.
             if area not in areas:
                 if area:
                     errors.append(f"{name}: area {area!r} is not one of the columns")
-                area = areas[0]
+                area = OFF_AREA if OFF_AREA in areas else areas[0]
             engineers.append({"name": name, "area": area})
 
         return {

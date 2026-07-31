@@ -4,9 +4,10 @@ A full-screen wall display for a touchscreen TV, laid out as two swipeable pages
 
 **Page 1 -- Overview:** meeting takeaways and team updates pulled straight out of
 folders, a Kanban project board, and the date/time with calendar and agenda.
-**Page 2 -- Blackboard:** a full-screen surface to write on with the touch pen.
+**Page 2 -- Area Coverage:** a full-screen board of who is covering which area
+today; drag an engineer between areas with a finger.
 
-Swipe left and right to move between them, or tap **Overview** / **Blackboard**
+Swipe left and right to move between them, or tap **Overview** / **Coverage**
 in the bottom bar. A scrolling world-news ticker runs across both pages.
 
 Everything updates by itself. Drop a Word doc in a folder and it is on the wall a
@@ -20,7 +21,7 @@ second later — nobody has to touch the TV.
 
 | Section | Where its content comes from |
 |---|---|
-| **Blackboard** (page 2) | Drawn on the TV with a stylus or finger. Saved to disk, so it survives a reboot and mirrors to any other screen showing the dashboard. |
+| **Area Coverage** (page 2) | `data\coverage\coverage.yaml` — engineer cards you drag between area columns. Saved to disk and mirrored to any other screen showing the dashboard. |
 | **Team Meeting Takeaways** | Every `.docx` / `.pdf` / `.md` / `.txt` in `data\meeting-takeaways`. Newest first, auto-rotating. |
 | **Team Updates** | Same, from `data\team-updates`. One file per project or per person works well. |
 | **Project Tracking** | `data\projects\projects.yaml` — a Kanban board with owners, priority, due dates, health and progress. |
@@ -67,7 +68,7 @@ note says a new dependency was added.
 | Action | How |
 |---|---|
 | Start it | `Start Dashboard.bat`, or the *Team Dashboard* desktop shortcut |
-| Change page | Swipe left/right, tap **Overview** / **Blackboard**, or press `←` `→` (or `1` / `2`) |
+| Change page | Swipe left/right, tap **Overview** / **Coverage**, or press `←` `→` (or `1` / `2`) |
 | Minimise, close, or shut down | Tap the **power icon** at the right of the bottom bar |
 | Leave kiosk mode by keyboard | `Ctrl+W` or `Alt+F4` on the TV |
 | Stop the server from a terminal | `windows\Stop-Dashboard.ps1` |
@@ -88,7 +89,7 @@ address on itself, under Team Updates, so nobody has to be told it twice.
 
 Hand out `docs/Team-Dashboard-One-Pager.pdf` -- a single printable page
 covering posting, what reads well on a wall, the project board and the
-blackboard. Pin one by the TV, email the rest.
+area-coverage board. Pin one by the TV, email the rest.
 
 **What the drop page accepts:** `.docx`, `.pdf`, `.md`, `.txt`, up to 25 MB.
 Filenames are rebuilt from safe characters, path traversal is refused, and a
@@ -252,23 +253,20 @@ and the timestamp on the right turns amber rather than the ticker going blank.
 
 ---
 
-## Blackboard notes
+## Area coverage
 
-- Pen pressure is honoured on Windows Ink devices — press harder for a heavier line.
-- A resting palm is rejected while you write with the stylus.
-- Strokes are stored as vectors, so the board redraws crisply at any window size
-  and stays a few KB on disk.
-- **Undo** removes the last stroke; the eraser removes whole strokes it touches.
-- **Clear** asks first.
-- If two screens show the dashboard, a stroke on one appears on the other within
-  a couple of seconds.
+Page 2 is the daily coverage board: each engineer is a card, each area is a
+column. Drag a card to the area that person is covering today and the change
+saves itself; any other screen showing the dashboard updates within a second.
 
-The board lives in `data\blackboard\board.json`. Delete that file to reset it.
-
-The blackboard is page 2, so it gets the whole screen. Note that a finger dragged
-across the canvas **draws** rather than changing page -- nobody should flip the
-page mid-stroke -- so use the **‹ Overview** button in the header, the page
-buttons in the bottom bar, or the `←` key to go back.
+- Areas and engineers both come from `data\coverage\coverage.yaml`, which
+  documents itself at the top. Edit the file to add or rename either.
+- An engineer whose `area` is not one of the listed areas shows in the first
+  column until dragged somewhere valid, and a note appears under the board.
+- The coverage page gets the whole screen. A finger dragging a card **moves**
+  it rather than changing page -- nobody should flip the page mid-drag -- so use
+  the **‹ Overview** button in the header, the page buttons in the bottom bar,
+  or the `←` key to go back.
 
 ## Closing the dashboard
 
@@ -303,10 +301,11 @@ compile. Edit a file in `frontend\` and reload the TV.
 
 | Path | What it is |
 |---|---|
-| `backend\app.py` | Routes, SSE fan-out, blackboard validation |
+| `backend\app.py` | Routes, SSE fan-out, write endpoints |
 | `backend\config.py` | Every environment variable |
 | `backend\sources\documents.py` | Word / PDF / Markdown → renderable blocks |
 | `backend\sources\projects.py` | YAML → board model, health and progress rules |
+| `backend\sources\coverage.py` | YAML → area-coverage board, read and write |
 | `backend\sources\news.py` | Feed fetching, dedupe, failure handling |
 | `backend\sources\agenda.py` | ICS parsing and recurrence expansion |
 | `backend\watcher.py` | Debounced filesystem watching |
@@ -318,9 +317,9 @@ compile. Edit a file in `frontend\` and reload the TV.
 | Endpoint | Purpose |
 |---|---|
 | `GET /api/state` | Everything at once — what a fresh screen loads |
-| `GET /api/stream` | Server-sent events; pushes `content` and `blackboard` |
-| `GET /api/takeaways`, `/api/updates`, `/api/projects`, `/api/news`, `/api/agenda` | Individual panels |
-| `GET`/`PUT` `/api/blackboard` | Read and save strokes |
+| `GET /api/stream` | Server-sent events; pushes `content` updates per channel |
+| `GET /api/takeaways`, `/api/updates`, `/api/projects`, `/api/coverage`, `/api/news`, `/api/agenda` | Individual panels |
+| `POST /api/coverage/{engineer}/area` | Reassign an engineer to an area (loopback only) |
 | `GET /api/health` | Liveness, plus how many screens are connected |
 
 ---
@@ -357,7 +356,7 @@ wall down.
 | Calendar empty | Confirm the ICS link opens in a browser and returns a `.ics` file |
 | Kiosk mode ignored | Close all other Edge windows, or just re-run `Start Dashboard.bat` — it uses its own profile |
 | TV sleeps | The start script sets the power timeouts, but check Windows Settings → Power |
-| Board not saving | Look for "Not saved" under the blackboard, then check `dashboard.log` |
+| Coverage change not sticking | A message appears under the board if the file changed on disk mid-drag; otherwise check `dashboard.log` |
 
 Reset everything without losing content: `windows\Uninstall-Dashboard.ps1` then
 `Install.bat`. Your `data\` folder and `dashboard.env` are left alone.

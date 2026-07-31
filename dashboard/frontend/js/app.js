@@ -2,11 +2,11 @@
  * Dashboard bootstrap: fetches state, wires the SSE stream, and keeps every
  * panel in sync. Panels are dumb renderers — this module owns the data flow.
  */
-import { Blackboard } from './blackboard.js';
 import { CardDetail } from './carddetail.js';
 import { CardDrag } from './carddrag.js';
 import { DocumentPanel } from './documents.js';
 import { Pager } from './pager.js';
+import { renderCoverage } from './coverage.js';
 import { getCard, getColumns, renderBoard } from './projects.js';
 import { SessionControl } from './session.js';
 import { TimePanel } from './timepanel.js';
@@ -57,14 +57,6 @@ const ticker = new Ticker({
   status: document.getElementById('ticker-status'),
 });
 
-const blackboard = new Blackboard({
-  canvas: document.getElementById('board-canvas'),
-  surface: document.getElementById('board-surface'),
-  tools: document.getElementById('board-tools'),
-  hint: document.getElementById('board-hint'),
-  saveState: document.getElementById('board-save-state'),
-});
-
 new SessionControl({
   button: document.getElementById('session-open'),
   sheet: document.getElementById('session-sheet'),
@@ -108,6 +100,37 @@ document.getElementById('kanban').addEventListener('keydown', (event) => {
   event.preventDefault();
   openCard(card.dataset.cardId);
 });
+
+/* ------------------------------------------------------------------ */
+/* Coverage board — same drag engine, no detail sheet (drag only)      */
+/* ------------------------------------------------------------------ */
+new CardDrag({
+  root: document.getElementById('coverage-board'),
+  onMove: (engineer, area) => assignCoverage(engineer, area),
+  // No tap action: a coverage card carries only a name, nothing to open.
+});
+
+async function assignCoverage(engineer, area) {
+  try {
+    const response = await fetch(`/api/coverage/${encodeURIComponent(engineer)}/area`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ area }),
+    });
+    const result = await response.json();
+    if (!result.ok) {
+      const stale = response.status === 404 || response.status === 405;
+      toast(stale
+        ? 'The server is running an older build. Restart it: windows\\Stop-Dashboard.ps1, then Start Dashboard.bat'
+        : (result.detail || 'Could not save that change.'));
+    }
+  } catch (error) {
+    console.warn('coverage write failed', error);
+    toast('Could not save that change.');
+  }
+  // Repaint either way: on success to confirm, on failure to undo the drag.
+  await refresh('coverage');
+}
 
 async function mutate(path, body) {
   try {
@@ -172,16 +195,6 @@ const pager = new Pager({
   dots: document.querySelectorAll('.pager__dot'),
 });
 
-pager.onChange((page) => {
-  if (page === 'board') {
-    // Another screen may have drawn while this one sat on the overview page.
-    blackboard.pull();
-  } else {
-    // Leaving the board mid-stroke would otherwise leave the save pending.
-    blackboard.flush();
-  }
-});
-
 /* ------------------------------------------------------------------ */
 /* Fetch helpers                                                       */
 /* ------------------------------------------------------------------ */
@@ -195,6 +208,7 @@ const channels = {
   takeaways: async () => panels.takeaways.render((await getJSON('/api/takeaways')).documents),
   updates: async () => panels.updates.render((await getJSON('/api/updates')).documents),
   projects: async () => renderBoard(await getJSON('/api/projects')),
+  coverage: async () => renderCoverage(await getJSON('/api/coverage')),
   news: async () => ticker.render(await getJSON('/api/news')),
   agenda: async () => timePanel.setAgenda(await getJSON('/api/agenda')),
 };
@@ -223,9 +237,9 @@ async function bootstrap() {
     panels.takeaways.render(state.takeaways);
     panels.updates.render(state.updates);
     renderBoard(state.projects);
+    renderCoverage(state.coverage);
     timePanel.setAgenda(state.agenda);
     ticker.render(state.news);
-    blackboard.load(state.blackboard);
     setLink(true);
   } catch (error) {
     console.error('bootstrap failed', error);
@@ -252,12 +266,6 @@ function connect() {
   stream.addEventListener('content', (event) => {
     const { channel } = safeParse(event.data);
     if (channel) refresh(channel);
-  });
-
-  stream.addEventListener('blackboard', (event) => {
-    const payload = safeParse(event.data);
-    // Ignore the echo of our own save; only pull when another screen drew.
-    if (payload.client_id !== blackboard.clientId) blackboard.pull();
   });
 
   stream.addEventListener('error', () => {
@@ -338,6 +346,5 @@ setInterval(refreshAll, FALLBACK_POLL_MS);
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     refreshAll();
-    blackboard.pull();
   }
 });

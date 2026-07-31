@@ -20,8 +20,8 @@ from .hub import EventHub
 from .sources import documents, projects
 from .sources.agenda import AgendaService
 from .sources.board_writer import BoardWriter
+from .sources.coverage import CoverageStore
 from .sources.news import NewsService
-from .storage import BlackboardStore
 from .watcher import ContentWatcher
 
 logging.basicConfig(
@@ -52,12 +52,10 @@ def _build_stamp() -> int:
 
 
 BUILD_STAMP = _build_stamp()
-MAX_STROKES = 4000
-MAX_POINTS_PER_STROKE = 5000
 
 settings: Settings = load_settings()
 hub = EventHub()
-blackboard = BlackboardStore(settings.blackboard_file)
+coverage = CoverageStore(settings.coverage_dir)
 board_writer = BoardWriter(settings.projects_dir)
 news = NewsService(settings.news_feeds, settings.news_max_items)
 agenda = AgendaService(settings.calendar_feeds, settings.timezone, settings.calendar_horizon_days)
@@ -76,12 +74,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         if channel == "projects" and board_writer.in_quiet_period():
             log.debug("ignoring watcher event from our own write")
             return
+        if channel == "coverage" and coverage.in_quiet_period():
+            log.debug("ignoring watcher event from our own write")
+            return
         hub.publish("content", {"channel": channel})
 
     watcher = ContentWatcher(announce)
     watcher.watch("takeaways", settings.takeaways_dir)
     watcher.watch("updates", settings.updates_dir)
     watcher.watch("projects", settings.projects_dir)
+    watcher.watch("coverage", settings.coverage_dir)
     watcher.start()
 
     tasks = [
@@ -274,6 +276,32 @@ async def toggle_milestone(
 
 
 # --------------------------------------------------------------------------- #
+# Coverage board -- which engineer is covering which area today
+# --------------------------------------------------------------------------- #
+@app.get("/api/coverage")
+async def get_coverage() -> dict[str, Any]:
+    return await asyncio.to_thread(coverage.load)
+
+
+@app.post("/api/coverage/{engineer}/area")
+async def assign_coverage(
+    engineer: str, request: Request, payload: dict[str, Any] = Body(...)
+) -> JSONResponse:
+    """Move an engineer to an area, writing the change back to the YAML."""
+    if not _is_local(request):
+        return JSONResponse({"ok": False, "detail": "read-only from here"}, status_code=403)
+
+    area = str(payload.get("area", "")).strip()
+    if not area:
+        return JSONResponse({"ok": False, "detail": "area is required"}, status_code=400)
+
+    result = await asyncio.to_thread(coverage.assign, engineer, area)
+    if result.ok:
+        hub.publish("content", {"channel": "coverage"})
+    return JSONResponse(result.as_dict(), status_code=200 if result.ok else 409)
+
+
+# --------------------------------------------------------------------------- #
 # Uploads -- reachable from the LAN so the team can post without a file share
 # --------------------------------------------------------------------------- #
 @app.post("/api/upload")
@@ -340,77 +368,21 @@ async def get_now() -> dict[str, Any]:
 @app.get("/api/state")
 async def get_state() -> dict[str, Any]:
     """One-shot bootstrap so a freshly opened screen paints in a single round trip."""
-    takeaways, updates, board = await asyncio.gather(
+    takeaways, updates, board, coverage_board = await asyncio.gather(
         asyncio.to_thread(documents.load_folder, settings.takeaways_dir),
         asyncio.to_thread(documents.load_folder, settings.updates_dir),
         asyncio.to_thread(projects.load_board, settings.projects_dir),
+        asyncio.to_thread(coverage.load),
     )
     return {
         "config": await get_config(),
         "takeaways": takeaways,
         "updates": updates,
         "projects": board,
+        "coverage": coverage_board,
         "news": news.snapshot,
         "agenda": agenda.snapshot,
-        "blackboard": blackboard.read(),
         "now": await get_now(),
-    }
-
-
-# --------------------------------------------------------------------------- #
-# Blackboard
-# --------------------------------------------------------------------------- #
-@app.get("/api/blackboard")
-async def get_blackboard() -> dict[str, Any]:
-    return blackboard.read()
-
-
-@app.put("/api/blackboard")
-async def put_blackboard(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
-    strokes = payload.get("strokes")
-    if not isinstance(strokes, list):
-        return JSONResponse({"error": "strokes must be a list"}, status_code=400)
-
-    cleaned = [stroke for stroke in (_clean_stroke(s) for s in strokes[:MAX_STROKES]) if stroke]
-    saved = await asyncio.to_thread(blackboard.write, cleaned)
-    # client_id lets the writing screen ignore the echo of its own save.
-    hub.publish(
-        "blackboard",
-        {"revision": saved["revision"], "client_id": payload.get("client_id", "")},
-    )
-    return saved
-
-
-def _clean_stroke(stroke: Any) -> dict[str, Any] | None:
-    """Whitelist stroke fields — the board is persisted and replayed on other screens.
-
-    Points are flat (x, y, pressure) triples, so the length must be a multiple
-    of three. A single triple is a legitimate stroke: it renders as a dot.
-    """
-    if not isinstance(stroke, dict):
-        return None
-    points = stroke.get("points")
-    if not isinstance(points, list) or len(points) < 3 or len(points) % 3 != 0:
-        return None
-
-    coords: list[float] = []
-    for value in points[: MAX_POINTS_PER_STROKE * 3]:
-        try:
-            coords.append(round(float(value), 4))
-        except (TypeError, ValueError):
-            return None
-
-    try:
-        width = float(stroke.get("width", 4) or 4)
-    except (TypeError, ValueError):
-        width = 4.0
-
-    tool = stroke.get("tool")
-    return {
-        "points": coords,
-        "color": str(stroke.get("color", "#f4f4ef"))[:24],
-        "width": max(1.0, min(80.0, width)),
-        "tool": tool if tool in ("chalk", "pen", "highlighter", "eraser") else "chalk",
     }
 
 

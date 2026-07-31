@@ -144,7 +144,7 @@ if (-not (Test-Path $envFile)) {
     Write-Note 'dashboard.env already exists, leaving it alone'
 }
 
-foreach ($folder in 'meeting-takeaways', 'team-updates', 'projects', 'blackboard') {
+foreach ($folder in 'meeting-takeaways', 'team-updates', 'projects', 'coverage') {
     $path = Join-Path $AppRoot "data\$folder"
     if (-not (Test-Path $path)) { New-Item -ItemType Directory -Path $path -Force | Out-Null }
 }
@@ -156,7 +156,7 @@ Write-Ok 'Content folders ready'
 # unzipping a new build cannot overwrite their work.
 $samples = Join-Path $AppRoot 'samples'
 if (Test-Path $samples) {
-    foreach ($folder in 'projects', 'team-updates', 'meeting-takeaways') {
+    foreach ($folder in 'projects', 'team-updates', 'meeting-takeaways', 'coverage') {
         $src = Join-Path $samples $folder
         $dst = Join-Path $AppRoot "data\$folder"
         if (-not (Test-Path $src)) { continue }
@@ -295,5 +295,6 @@ Write-Host @"
     data\meeting-takeaways   Word / PDF / Markdown -> Team Meeting Takeaways
     data\team-updates        one file per project or person -> Team Updates
     data\projects            projects.yaml -> the Kanban board
+    data\coverage            coverage.yaml -> the daily Area Coverage board
 
 "@ -ForegroundColor Cyan

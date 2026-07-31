@@ -78,13 +78,15 @@ itself at the top.
 
 ---
 
-## The blackboard
+## The area-coverage board
 
-Swipe left on the TV, or tap **Blackboard** in the bottom bar. Write with the
-pen. It saves by itself and survives a reboot — treat it as a permanent
-scratchpad, not a whiteboard that gets wiped nightly.
+Swipe left on the TV, or tap **Coverage** in the bottom bar. Each engineer is a
+card; each area (Perimeter, HD JOE, Downtown, On-Call, Special project) is a
+column. **Press and hold a card, then drag it** to the area that person is
+covering today. It saves by itself and shows on every screen within a second.
 
-**Undo** removes your last stroke. **Clear** wipes the whole board and asks first.
+Prefer to edit a file? It is `coverage.yaml` in the dashboard's `data\coverage`
+folder, and it documents itself at the top.
 
 ---
 

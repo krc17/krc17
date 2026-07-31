@@ -4,14 +4,14 @@
  * Uses CSS scroll-snap rather than a transform-driven carousel, so touch
  * swiping gets the platform's own momentum and rubber-banding for free.
  *
- * One deliberate wrinkle: the blackboard canvas sets `touch-action: none` and
- * captures the pointer, so a finger dragged across it draws instead of paging.
- * That is the behaviour we want -- nobody should flip the page mid-stroke -- so
- * the board page always carries explicit ways out: the "Overview" button in its
- * header, the dots below, and the arrow keys.
+ * One deliberate wrinkle: a card being dragged takes pointer capture, so a
+ * finger dragging an engineer between areas moves the card instead of paging.
+ * That is the behaviour we want -- nobody should flip the page mid-drag -- so
+ * the second page always carries explicit ways out: the "Overview" button in
+ * its header, the dots below, and the arrow keys.
  */
 
-const PAGE_NAMES = ['overview', 'board'];
+const PAGE_NAMES = ['overview', 'coverage'];
 
 export class Pager {
   constructor({ scroller, dots }) {

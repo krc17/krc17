@@ -1,0 +1,32 @@
+# ============================================================================
+# Daily area coverage
+#
+# Who is covering which area today. Drag an engineer between areas on the wall
+# and this file updates itself; or edit it here and the wall repaints within
+# about a second -- no restart.
+#
+#   areas       the columns, in the order they appear on the wall
+#   engineers   one entry per person: a name and the area they are covering.
+#               An engineer's area must be one of the areas above; a name with
+#               an area that is not listed shows in the first column until it is
+#               dragged somewhere valid.
+# ============================================================================
+
+coverage:
+  areas:
+    - Perimeter
+    - HD JOE
+    - Downtown
+    - On-Call
+    - Special project
+  engineers:
+    - name: KC
+      area: Perimeter
+    - name: Berry
+      area: HD JOE
+    - name: Steve
+      area: Downtown
+    - name: Jam
+      area: On-Call
+    - name: Trey
+      area: Special project

@@ -64,7 +64,7 @@ class Settings:
     takeaways_dir: Path
     updates_dir: Path
     projects_dir: Path
-    blackboard_dir: Path
+    coverage_dir: Path
 
     host: str = "127.0.0.1"
     port: int = 8770
@@ -82,10 +82,6 @@ class Settings:
     # Seconds each document card is shown before the panel rotates to the next one.
     rotation_seconds: int = 25
 
-    @property
-    def blackboard_file(self) -> Path:
-        return self.blackboard_dir / "board.json"
-
 
 def load_settings() -> Settings:
     data_dir = _env_path("DASHBOARD_DATA_DIR", Path(__file__).resolve().parent.parent / "data")
@@ -94,7 +90,7 @@ def load_settings() -> Settings:
         takeaways_dir=_env_path("TAKEAWAYS_DIR", data_dir / "meeting-takeaways"),
         updates_dir=_env_path("UPDATES_DIR", data_dir / "team-updates"),
         projects_dir=_env_path("PROJECTS_DIR", data_dir / "projects"),
-        blackboard_dir=_env_path("BLACKBOARD_DIR", data_dir / "blackboard"),
+        coverage_dir=_env_path("COVERAGE_DIR", data_dir / "coverage"),
         host=os.getenv("DASHBOARD_HOST", "127.0.0.1"),
         port=_env_int("DASHBOARD_PORT", 8770),
         team_name=os.getenv("TEAM_NAME", "Engineering"),
@@ -111,7 +107,7 @@ def load_settings() -> Settings:
         settings.takeaways_dir,
         settings.updates_dir,
         settings.projects_dir,
-        settings.blackboard_dir,
+        settings.coverage_dir,
     ):
         directory.mkdir(parents=True, exist_ok=True)
     return settings

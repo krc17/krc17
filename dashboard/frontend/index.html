@@ -80,48 +80,20 @@
         </section>
       </section>
 
-      <!-- ══ Page 2 — Blackboard ═════════════════════════════════════ -->
-      <section class="page page--board" id="page-board" aria-label="Blackboard">
-        <section class="panel panel--board" id="panel-board" aria-labelledby="board-title">
+      <!-- ══ Page 2 — Area coverage ══════════════════════════════════ -->
+      <section class="page page--coverage" id="page-coverage" aria-label="Area coverage">
+        <section class="panel panel--coverage" id="panel-coverage" aria-labelledby="coverage-title">
           <header class="panel__head">
             <button class="tool tool--back" data-goto-page="0" aria-label="Back to overview">
               <span aria-hidden="true">‹</span> Overview
             </button>
-            <h2 class="panel__title" id="board-title">Blackboard</h2>
-            <div class="board-tools" id="board-tools">
-              <div class="tool-group" role="radiogroup" aria-label="Chalk colour">
-                <button class="swatch is-active" data-color="#f4f4ef" style="--swatch:#f4f4ef" role="radio" aria-checked="true" aria-label="White chalk"></button>
-                <button class="swatch" data-color="#3987e5" style="--swatch:#3987e5" role="radio" aria-checked="false" aria-label="Blue chalk"></button>
-                <button class="swatch" data-color="#199e70" style="--swatch:#199e70" role="radio" aria-checked="false" aria-label="Green chalk"></button>
-                <button class="swatch" data-color="#c98500" style="--swatch:#c98500" role="radio" aria-checked="false" aria-label="Amber chalk"></button>
-                <button class="swatch" data-color="#e66767" style="--swatch:#e66767" role="radio" aria-checked="false" aria-label="Red chalk"></button>
-              </div>
-              <div class="tool-group" role="radiogroup" aria-label="Stroke width">
-                <button class="tool tool--size is-active" data-width="4" role="radio" aria-checked="true" aria-label="Thin">
-                  <span class="dot" style="--dot:6px"></span>
-                </button>
-                <button class="tool tool--size" data-width="10" role="radio" aria-checked="false" aria-label="Medium">
-                  <span class="dot" style="--dot:12px"></span>
-                </button>
-                <button class="tool tool--size" data-width="20" role="radio" aria-checked="false" aria-label="Thick">
-                  <span class="dot" style="--dot:20px"></span>
-                </button>
-              </div>
-              <div class="tool-group">
-                <button class="tool" data-action="eraser" aria-pressed="false" title="Eraser">Eraser</button>
-                <button class="tool" data-action="undo" title="Undo last stroke">Undo</button>
-                <button class="tool tool--danger" data-action="clear" title="Wipe the board">Clear</button>
-              </div>
-            </div>
+            <h2 class="panel__title" id="coverage-title">Area Coverage</h2>
+            <p class="coverage-hint">Drag an engineer to the area they are covering.</p>
           </header>
-          <div class="board-surface" id="board-surface">
-            <canvas id="board-canvas" aria-label="Shared blackboard. Draw with a stylus or finger."></canvas>
-            <p class="board-hint" id="board-hint">Write here with the touch pen</p>
+          <div class="board-scroll">
+            <div class="kanban" id="coverage-board"></div>
           </div>
-          <footer class="panel__foot">
-            <span class="save-state" id="board-save-state" aria-live="polite">Saved</span>
-            <span class="board-note">Drawing is captured here, so use ‹ Overview or the page buttons below to go back.</span>
-          </footer>
+          <footer class="panel__foot" id="coverage-foot"></footer>
         </section>
       </section>
     </div>
@@ -134,7 +106,7 @@
           <span class="pager__label">Overview</span>
         </button>
         <button class="pager__dot" data-goto-page="1">
-          <span class="pager__label">Blackboard</span>
+          <span class="pager__label">Coverage</span>
         </button>
       </nav>
 

@@ -49,7 +49,6 @@
   --pad: clamp(12px, 1vw, 24px);
 
   --font: system-ui, -apple-system, "Segoe UI", sans-serif;
-  --chalk-font: "Segoe Print", "Bradley Hand", "Comic Sans MS", var(--font);
 }
 
 *,
@@ -114,9 +113,8 @@ body {
 }
 
 /* --- Page 1: overview ---------------------------------------------------- */
-/* The blackboard's old row is handed entirely to the document panels: they go
-   from 32% to 69% of the page height, while the agenda and the project board
-   keep exactly the heights they had before. */
+/* The document panels own the tall middle band: they run from 32% to 69% of
+   the page height, while the agenda and the project board keep their heights. */
 .page--overview {
   display: grid;
   gap: var(--gap);
@@ -132,13 +130,13 @@ body {
 .panel--agenda   { grid-area: agenda; }
 .panel--projects { grid-area: projects; }
 
-/* --- Page 2: blackboard -------------------------------------------------- */
-.page--board {
+/* --- Page 2: area coverage ----------------------------------------------- */
+.page--coverage {
   display: flex;
   padding-right: 1px;               /* keeps the snap edge crisp at some zooms */
 }
 
-.page--board .panel--board {
+.page--coverage .panel--coverage {
   flex: 1 1 auto;
   min-width: 0;
 }
@@ -226,8 +224,7 @@ body {
 /* =========================================================================
    Controls
    ========================================================================= */
-.tool,
-.swatch {
+.tool {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -258,7 +255,7 @@ body {
 .tool--icon { padding: 0; font-size: 1.15rem; line-height: 1; }
 .tool--danger:hover { border-color: var(--status-critical); color: #fff; }
 
-/* The way off the blackboard page, since the canvas swallows swipes. */
+/* The way off the coverage page, since a card drag captures the pointer. */
 .tool--back {
   gap: 0.35rem;
   padding: 0 0.9rem;
@@ -268,88 +265,10 @@ body {
 
 .tool--back:hover { border-color: var(--series-1); }
 
-.tool--size .dot {
-  width: var(--dot);
-  height: var(--dot);
-  border-radius: 50%;
-  background: var(--ink-2);
-}
-
-.tool-group {
-  display: flex;
-  gap: 0.3rem;
-  padding: 0.25rem;
-  background: var(--plane);
-  border-radius: 10px;
-}
-
-.swatch {
-  min-width: 2.75rem;
-  padding: 0;
-  background: var(--swatch);
-  border: 2px solid transparent;
-}
-
-.swatch.is-active {
-  border-color: var(--ink);
-  box-shadow: 0 0 0 2px var(--plane) inset;
-}
-
-:where(.tool, .swatch):focus-visible {
+.tool:focus-visible {
   outline: 2px solid var(--series-1);
   outline-offset: 2px;
 }
-
-/* =========================================================================
-   Blackboard
-   ========================================================================= */
-.board-tools {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-left: auto;
-}
-
-.board-surface {
-  position: relative;
-  flex: 1 1 auto;
-  min-height: 0;
-  border-radius: 10px;
-  overflow: hidden;
-  background-color: #12211c;    /* slate-green board, not pure black */
-  background-image:
-    radial-gradient(circle at 22% 28%, rgba(255, 255, 255, 0.05), transparent 55%),
-    radial-gradient(circle at 78% 72%, rgba(255, 255, 255, 0.04), transparent 50%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.55);
-}
-
-#board-canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-  touch-action: none;           /* required: we handle pointer events ourselves */
-  cursor: crosshair;
-}
-
-.board-hint {
-  position: absolute;
-  inset: auto 0 42% 0;
-  margin: 0;
-  text-align: center;
-  font-family: var(--chalk-font);
-  font-size: 1.6rem;
-  color: rgba(244, 244, 239, 0.22);
-  pointer-events: none;
-  transition: opacity 200ms ease;
-}
-
-.board-hint[hidden] { display: none; }
-
-.save-state { color: var(--muted); }
-.save-state[data-state="saving"] { color: var(--status-warning); }
-.save-state[data-state="error"] { color: var(--status-critical); }
 
 /* =========================================================================
    Clock, calendar, agenda
@@ -934,6 +853,29 @@ body {
   border-radius: 50%;
 }
 
+/* Coverage board: an engineer card is just a big avatar and a name, sized to
+   read across the room and to grab with a finger. */
+.coverage-hint { margin: 0; font-size: 0.85rem; color: var(--muted); }
+
+.avatar--lg {
+  width: 2.4rem;
+  height: 2.4rem;
+  font-size: 1rem;
+}
+
+.card--coverage {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.7rem 0.8rem;
+}
+
+.card--coverage__name {
+  font-size: 1.15rem;
+  font-weight: 650;
+  color: var(--ink);
+}
+
 /* Health chip: icon + word + colour, so it never depends on hue alone. */
 .chip {
   display: inline-flex;
@@ -1076,12 +1018,6 @@ body {
 .pager__dot.is-active::before { opacity: 1; background: var(--series-1); }
 
 .pager__dot:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
-
-.board-note {
-  margin-left: auto;
-  font-size: 0.74rem;
-  color: var(--muted);
-}
 
 /* Quiet by default — it should never compete with the content on the wall. */
 .session-btn {

@@ -20,24 +20,30 @@ import yaml
 
 log = logging.getLogger(__name__)
 
-DEFAULT_COLUMNS = ["Backlog", "In Progress", "Blocked", "In Review", "Done"]
+DEFAULT_COLUMNS = ["To Do", "Selected", "In Progress", "In Review", "Done"]
 HEALTH_VALUES = ("on-track", "at-risk", "off-track", "done")
 PRIORITY_VALUES = ("critical", "high", "medium", "low")
 
 # Free-text status values people actually type, mapped onto workflow columns.
 _COLUMN_ALIASES = {
-    "todo": "Backlog",
-    "to do": "Backlog",
-    "planned": "Backlog",
-    "not started": "Backlog",
-    "backlog": "Backlog",
+    "todo": "To Do",
+    "to do": "To Do",
+    "to-do": "To Do",
+    "planned": "To Do",
+    "not started": "To Do",
+    "backlog": "To Do",
+    "selected": "Selected",
+    "ready": "Selected",
+    "next": "Selected",
+    "up next": "Selected",
     "wip": "In Progress",
     "in progress": "In Progress",
     "doing": "In Progress",
     "active": "In Progress",
-    "blocked": "Blocked",
-    "on hold": "Blocked",
-    "waiting": "Blocked",
+    # No Blocked column any more -- a stalled item is still in flight.
+    "blocked": "In Progress",
+    "on hold": "In Progress",
+    "waiting": "In Progress",
     "review": "In Review",
     "in review": "In Review",
     "qa": "In Review",
@@ -78,7 +84,7 @@ class Board:
         total = len(self.cards)
         done = sum(1 for card in self.cards if card["column"] == "Done")
         active = sum(1 for card in self.cards if card["column"] in ("In Progress", "In Review"))
-        blocked = sum(1 for card in self.cards if card["column"] == "Blocked")
+        queued = sum(1 for card in self.cards if card["column"] in ("To Do", "Selected"))
         at_risk = sum(1 for card in self.cards if card["health"] in ("at-risk", "off-track"))
         overdue = sum(1 for card in self.cards if card.get("overdue"))
         open_cards = [card for card in self.cards if card["column"] != "Done"]
@@ -91,7 +97,7 @@ class Board:
             "total": total,
             "done": done,
             "active": active,
-            "blocked": blocked,
+            "queued": queued,
             "at_risk": at_risk,
             "overdue": overdue,
             "delivery_progress": progress,
@@ -177,7 +183,7 @@ def _normalise(project: dict[str, Any], columns: list[str]) -> dict[str, Any] | 
     if not title:
         return None
 
-    status = _text(project.get("status") or project.get("column")) or "Backlog"
+    status = _text(project.get("status") or project.get("column")) or "To Do"
     column = _resolve_column(status, columns)
     due = _parse_date(project.get("due") or project.get("due_date") or project.get("target"))
     milestones = _milestones(project.get("milestones"))
@@ -231,7 +237,7 @@ def _resolve_column(status: str, columns: list[str]) -> str:
         return alias
     if alias:
         return alias
-    return columns[0] if columns else "Backlog"
+    return columns[0] if columns else "To Do"
 
 
 def _derive_columns(cards: list[dict[str, Any]]) -> list[str]:
@@ -304,7 +310,7 @@ def _progress(project: dict[str, Any], column: str, milestones: list[dict[str, A
             pass
     if milestones:
         return round(sum(1 for m in milestones if m["done"]) / len(milestones) * 100)
-    return {"Done": 100, "In Review": 85, "In Progress": 50, "Blocked": 35}.get(column, 0)
+    return {"Done": 100, "In Review": 85, "In Progress": 50, "Selected": 15, "To Do": 0}.get(column, 0)
 
 
 def _health(project: dict[str, Any], column: str, due: date | None, progress: int) -> str:
@@ -313,8 +319,6 @@ def _health(project: dict[str, Any], column: str, due: date | None, progress: in
         return declared
     if column == "Done":
         return "done"
-    if column == "Blocked":
-        return "off-track"
     if due:
         remaining = (due - date.today()).days
         if remaining < 0:

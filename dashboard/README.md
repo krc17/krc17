@@ -155,7 +155,7 @@ every field; the short version:
 ```yaml
 board:
   name: Engineering Delivery
-  columns: [Backlog, In Progress, Blocked, In Review, Done]
+  columns: [To Do, Selected, In Progress, In Review, Done]
 
 projects:
   - id: INF-114
@@ -163,7 +163,8 @@ projects:
     owner: Kevin Caughman
     status: In Progress
     priority: high
-    progress: 65
+    total: 8
+    complete: 5
     due: 2026-08-14
     tags: [infra, proxmox]
     milestones:
@@ -175,8 +176,8 @@ projects:
 Only `title` is required. Everything else has a sensible fallback:
 
 - **Health** (on-track / at-risk / off-track) is derived from the due date and
-  progress unless you set it explicitly. Past due, or blocked, reads off-track;
-  under a week out with less than 75% done reads at-risk.
+  progress unless you set it explicitly. Past due reads off-track; under a week
+  out with less than 75% done reads at-risk.
 - **Progress** falls back to the share of completed milestones, then to the
   column.
 - **Status** accepts what people actually type — `wip`, `qa`, `on hold`,

@@ -23,9 +23,9 @@ const HEALTH = {
 
 /** Accent per column — categorical slots in fixed order, never cycled. */
 const COLUMN_ACCENT = {
-  Backlog: 'var(--muted)',
+  'To Do': 'var(--muted)',
+  Selected: 'var(--series-4)',
   'In Progress': 'var(--series-1)',
-  Blocked: 'var(--status-critical)',
   'In Review': 'var(--series-7)',
   Done: 'var(--series-3)',
 };
@@ -61,7 +61,7 @@ export function renderBoard(board) {
 function renderStats(summary) {
   const tiles = [
     { label: 'Active', value: summary.active ?? 0 },
-    { label: 'Blocked', value: summary.blocked ?? 0, tone: summary.blocked ? 'alert' : '' },
+    { label: 'Queued', value: summary.queued ?? 0 },
     { label: 'At risk', value: summary.at_risk ?? 0, tone: summary.at_risk ? 'warn' : '' },
     { label: 'Overdue', value: summary.overdue ?? 0, tone: summary.overdue ? 'alert' : '' },
     { label: 'Avg progress', value: `${summary.delivery_progress ?? 0}%` },

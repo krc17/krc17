@@ -9,8 +9,8 @@
 # Required per project: title
 # Everything else is optional and falls back to something sensible.
 #
-#   status      Backlog | In Progress | Blocked | In Review | Done
-#               (free text also works: "wip", "qa", "on hold", "shipped"…)
+#   status      To Do | Selected | In Progress | In Review | Done
+#               (free text also works: "ready", "wip", "qa", "shipped"…)
 #   owner       shown as initials + name on the card
 #   progress    0-100. Omit it and progress is derived from milestones,
 #               or from the column if there are none.
@@ -29,13 +29,57 @@
 board:
   name: Engineering Delivery
   columns:
-    - Backlog
+    - To Do
+    - Selected
     - In Progress
-    - Blocked
     - In Review
     - Done
 
 projects:
+  # --- To Do ----------------------------------------------------------------
+  - id: TD-201
+    title: Rack PDU power metering
+    summary: Per-outlet current draw into Prometheus so we can spot a failing PSU.
+    owner: Kevin Caughman
+    status: To Do
+    priority: medium
+    due: 2026-09-12
+    tags: [infra, monitoring]
+
+  - id: TD-202
+    title: WireGuard mesh to the remote site
+    summary: Replace the aging IPsec tunnel with a WireGuard full mesh.
+    owner: Marcus Reyes
+    status: To Do
+    priority: high
+    due: 2026-09-05
+    tags: [network, vpn]
+
+  # --- Selected -------------------------------------------------------------
+  - id: SEL-110
+    title: SSO for internal tools
+    summary: Front the wiki, Grafana and the NAS UI with the identity provider.
+    owner: Priya Nadkarni
+    status: Selected
+    priority: high
+    due: 2026-08-28
+    tags: [security, identity]
+    milestones:
+      - name: Pick OIDC vs SAML per app
+        done: false
+      - name: Provision the identity provider
+        done: false
+
+  - id: SEL-111
+    title: Cold spare for the primary NAS
+    summary: Stage an identical chassis, pre-flashed, ready to swap in.
+    owner: Dana Whitfield
+    status: Selected
+    priority: medium
+    due: 2026-09-01
+    tags: [storage, resilience]
+
+  # --- In Progress ----------------------------------------------------------
   - id: INF-114
     title: Proxmox cluster HA failover
     summary: Three-node quorum with replicated storage for the lab services.
@@ -63,71 +107,56 @@ projects:
     owner: Dana Whitfield
     status: In Progress
     priority: critical
-    progress: 40
+    total: 5
+    complete: 2
     due: 2026-08-05
-    health: at-risk
     tags: [security, siem]
     milestones:
-      - name: Syslog forwarder hardened
-        done: true
       - name: Suricata EVE parser
         done: false
-      - name: First detection rule live
+
+  # --- In Review ------------------------------------------------------------
+  - id: OPS-088
+    title: Nightly offsite backup verification
+    summary: Restore-test a random dataset each night and alert on drift.
+    owner: Priya Nadkarni
+    status: In Review
+    priority: high
+    progress: 90
+    due: 2026-08-02
+    tags: [ops, backup]
+    milestones:
+      - name: Runbook reviewed
         done: false
 
   - id: NET-207
     title: VLAN segmentation for guest traffic
+    summary: Isolate guest wifi from the lab and management networks.
     owner: Marcus Reyes
-    status: Blocked
-    priority: high
-    progress: 30
-    due: 2026-07-31
-    blocked_by: switch firmware RMA
+    status: In Review
+    priority: medium
+    progress: 80
+    due: 2026-08-08
     tags: [network]
 
-  - id: OPS-088
-    title: Nightly offsite backup verification
-    summary: Restore-test one random VM per night and report the result.
+  # --- Done -----------------------------------------------------------------
+  - id: SEC-036
+    title: MFA rollout for admin consoles
+    summary: Hardware keys required for every administrative login.
     owner: Priya Nadkarni
-    status: In Review
-    progress: 90
-    due: 2026-07-30
-    tags: [ops, backup]
-    milestones:
-      - name: Restore harness scripted
-        done: true
-      - name: Report to team channel
-        done: true
-      - name: Runbook reviewed
-        done: false
-
-  - id: PI-019
-    title: Lab sensor mesh on Pi Zero W
-    owner: Kevin Caughman
-    status: Backlog
-    priority: low
-    due: 2026-09-19
-    tags: [hardware, pi]
-
-  - id: OBS-031
-    title: Grafana dashboards for host metrics
-    owner: Dana Whitfield
-    status: Backlog
-    priority: medium
-    tags: [observability]
+    status: Done
+    priority: high
+    total: 6
+    complete: 6
+    due: 2026-07-03
+    tags: [security]
 
   - id: INF-097
     title: Media server migration to NVMe pool
+    summary: Cut the media server over to the NVMe pool with no downtime.
     owner: Marcus Reyes
     status: Done
+    priority: medium
     progress: 100
     due: 2026-07-11
     tags: [infra, storage]
-
-  - id: SEC-036
-    title: MFA rollout for admin consoles
-    owner: Priya Nadkarni
-    status: Done
-    progress: 100
-    due: 2026-07-03
-    tags: [security]

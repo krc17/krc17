@@ -10,9 +10,9 @@
  */
 
 const COLUMN_ACCENT = {
-  Backlog: 'var(--muted)',
+  'To Do': 'var(--muted)',
+  Selected: 'var(--series-4)',
   'In Progress': 'var(--series-1)',
-  Blocked: 'var(--status-critical)',
   'In Review': 'var(--series-7)',
   Done: 'var(--series-3)',
 };

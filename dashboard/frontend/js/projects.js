@@ -143,6 +143,12 @@ function renderCard(card, columnName) {
     node.append(meter(card));
   }
 
+  // When a card tracks counts, show them under the meter: done of total, left.
+  if (card.total) {
+    node.append(element('p', 'card__counts',
+      `${card.complete ?? 0}/${card.total} done · ${card.remaining ?? 0} left`));
+  }
+
   const nextMilestone = (card.milestones ?? []).find((milestone) => !milestone.done);
   if (nextMilestone) {
     node.append(

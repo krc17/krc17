@@ -76,8 +76,8 @@ const cardDetail = new CardDetail({
     cardDetail.close();
     moveCard(cardId, status);
   },
-  onProgress: (cardId, body) =>
-    mutate(`/api/projects/${encodeURIComponent(cardId)}/progress`, { ...body, cardId }),
+  onCompletion: (cardId, body) =>
+    mutate(`/api/projects/${encodeURIComponent(cardId)}/completion`, { ...body, cardId }),
   onDue: (cardId, body) =>
     mutate(`/api/projects/${encodeURIComponent(cardId)}/due`, { ...body, cardId }),
 });

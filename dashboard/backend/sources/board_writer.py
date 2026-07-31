@@ -89,6 +89,29 @@ class BoardWriter:
 
         return self._edit(card_id, mutate, "progress")
 
+    def set_completion(self, card_id: str, total: int, complete: int) -> WriteResult:
+        """Write total + complete counts, and move the card to Done at 100%."""
+        total = max(0, int(total))
+        complete = max(0, int(complete))
+        if total > 0:
+            complete = min(complete, total)
+
+        def mutate(card: Any) -> str | None:
+            prev = (_as_int(card.get("total")), _as_int(card.get("complete")))
+            card["total"] = total
+            card["complete"] = complete
+            note = f"{complete}/{total}"
+            changed = prev != (total, complete)
+            # Reaching 100% moves the card to Done on its own; dropping back
+            # below 100% never moves it out, so a finished card stays put.
+            if total > 0 and complete >= total and str(card.get("status", "")).strip().lower() != "done":
+                card["status"] = "Done"
+                note += " -> Done"
+                changed = True
+            return note if changed else None
+
+        return self._edit(card_id, mutate, "completion")
+
     def shift_due(self, card_id: str, days: int) -> WriteResult:
         """Nudge the due date by whole days, or set it from today if unset."""
 
@@ -215,6 +238,13 @@ class BoardWriter:
         except OSError:
             Path(tmp_name).unlink(missing_ok=True)
             raise
+
+
+def _as_int(raw: Any) -> int | None:
+    try:
+        return int(float(str(raw).strip()))
+    except (TypeError, ValueError):
+        return None
 
 
 def _as_date(raw: Any) -> date | None:

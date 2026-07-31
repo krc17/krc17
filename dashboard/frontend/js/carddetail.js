@@ -25,11 +25,11 @@ const HEALTH_LABEL = {
 };
 
 export class CardDetail {
-  constructor({ sheet, onMilestone, onMove, onProgress, onDue, getColumns }) {
+  constructor({ sheet, onMilestone, onMove, onCompletion, onDue, getColumns }) {
     this.sheet = sheet;
     this.onMilestone = onMilestone;
     this.onMove = onMove;
-    this.onProgress = onProgress;
+    this.onCompletion = onCompletion;
     this.onDue = onDue;
     this.getColumns = getColumns;
     this.card = null;
@@ -68,8 +68,11 @@ export class CardDetail {
     if (this.isOpen && card && card.id === this.card?.id) this.open(card);
   }
 
-  /** Big meter plus coarse steps -- nobody nudges 1% at a time on a wall. */
-  #progressControls(card) {
+  /**
+   * Completion by the numbers: type or tap in Total and Complete, the meter and
+   * the "remaining" line follow, and the backend turns 100% into a move to Done.
+   */
+  #completionControls(card) {
     const wrap = el('div', 'edit-block');
 
     const meter = el('div', 'meter meter--large');
@@ -79,33 +82,48 @@ export class CardDetail {
     if (card.health === 'off-track') fill.style.setProperty('--meter-fill', 'var(--status-critical)');
     else if (card.health === 'at-risk') fill.style.setProperty('--meter-fill', 'var(--status-warning)');
     track.append(fill);
-    meter.append(track, el('span', 'meter__value', `${card.progress}%`));
+    const value = el('span', 'meter__value', `${card.progress}%`);
+    meter.append(track, value);
     wrap.append(meter);
 
-    const nudge = el('div', 'edit-row');
-    [-25, -10, +10, +25].forEach((delta) => {
-      const button = el('button', 'edit-btn', delta > 0 ? `+${delta}` : String(delta));
-      button.type = 'button';
-      button.disabled = (delta < 0 && card.progress <= 0) || (delta > 0 && card.progress >= 100);
-      button.addEventListener('click', () => this.onProgress?.(card.id, { delta }));
-      nudge.append(button);
-    });
-    wrap.append(nudge);
+    const row = el('div', 'edit-fields');
+    const complete = numberField('Complete', card.complete);
+    const total = numberField('Total', card.total);
+    row.append(complete.field, el('span', 'edit-fields__of', 'of'), total.field);
+    wrap.append(row);
 
-    const presets = el('div', 'edit-row');
-    [0, 25, 50, 75, 100].forEach((value) => {
-      const button = el('button', 'edit-btn edit-btn--preset', `${value}%`);
-      button.type = 'button';
-      if (card.progress === value) button.classList.add('is-current');
-      button.addEventListener('click', () => this.onProgress?.(card.id, { progress: value }));
-      presets.append(button);
-    });
-    wrap.append(presets);
+    const remaining = el('p', 'edit-remaining');
+    wrap.append(remaining);
 
-    if (card.milestones?.length && card.progress_derived) {
-      wrap.append(el('p', 'edit-note',
-        'Currently derived from milestones. Setting a value here pins it.'));
-    }
+    const readInt = (input) => {
+      const n = parseInt(input.value, 10);
+      return Number.isFinite(n) ? n : null;
+    };
+    const paint = () => {
+      const t = readInt(total.input);
+      const c = readInt(complete.input) ?? 0;
+      if (t !== null && t > 0) {
+        const done = Math.max(0, Math.min(c, t));
+        remaining.textContent = `${Math.max(0, t - c)} remaining · ${Math.round((done / t) * 100)}%`;
+        value.textContent = `${Math.round((done / t) * 100)}%`;
+        fill.style.width = `${Math.round((done / t) * 100)}%`;
+      } else {
+        remaining.textContent = 'Enter a total to track completion';
+      }
+    };
+    const commit = () => {
+      const t = readInt(total.input);
+      if (t === null || t <= 0) return; // a total is required to save
+      this.onCompletion?.(card.id, { total: t, complete: Math.max(0, readInt(complete.input) ?? 0) });
+    };
+    [complete.input, total.input].forEach((input) => {
+      input.addEventListener('input', paint);
+      input.addEventListener('change', commit);
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') { event.preventDefault(); input.blur(); commit(); }
+      });
+    });
+    paint();
     return wrap;
   }
 
@@ -118,32 +136,21 @@ export class CardDetail {
     else if (card.due_in_days !== null && card.due_in_days <= 7) current.classList.add('is-soon');
     wrap.append(current);
 
-    const shift = el('div', 'edit-row');
-    [-7, -1, +1, +7].forEach((days) => {
-      const label = Math.abs(days) === 7 ? `${days > 0 ? '+' : '-'}1 wk` : `${days > 0 ? '+' : '-'}1 d`;
-      const button = el('button', 'edit-btn', label);
-      button.type = 'button';
-      button.addEventListener('click', () => this.onDue?.(card.id, { days }));
-      shift.append(button);
-    });
-    wrap.append(shift);
+    const row = el('div', 'edit-fields');
+    const input = document.createElement('input');
+    input.type = 'date';
+    input.className = 'edit-date';
+    if (card.due) input.value = card.due; // already ISO yyyy-mm-dd
+    input.addEventListener('change', () => this.onDue?.(card.id, { due: input.value || '' }));
+    row.append(input);
 
-    const quick = el('div', 'edit-row');
-    [['Today', 0], ['+2 wks', 14], ['+1 mo', 30]].forEach(([label, days]) => {
-      const button = el('button', 'edit-btn edit-btn--preset', label);
-      button.type = 'button';
-      // These set from today rather than nudging, so they mean what they say
-      // regardless of what the date currently is.
-      button.addEventListener('click', () => this.onDue?.(card.id, { due: isoFromToday(days) }));
-      quick.append(button);
-    });
     if (card.due) {
       const clear = el('button', 'edit-btn edit-btn--clear', 'Clear');
       clear.type = 'button';
       clear.addEventListener('click', () => this.onDue?.(card.id, { due: '' }));
-      quick.append(clear);
+      row.append(clear);
     }
-    wrap.append(quick);
+    wrap.append(row);
     return wrap;
   }
 
@@ -176,7 +183,7 @@ export class CardDetail {
 
     // --- progress ---------------------------------------------------
     panel.append(el('h3', 'card-detail__section', 'Progress'));
-    panel.append(this.#progressControls(card));
+    panel.append(this.#completionControls(card));
 
     // --- due date ---------------------------------------------------
     panel.append(el('h3', 'card-detail__section', 'Due date'));
@@ -254,6 +261,21 @@ function metaPair(label, value) {
   return pair;
 }
 
+/** A labelled numeric input, big enough for a fingertip and a touch keypad. */
+function numberField(label, value) {
+  const field = el('label', 'edit-field');
+  field.append(el('span', 'edit-field__label', label));
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.inputMode = 'numeric';
+  input.min = '0';
+  input.step = '1';
+  input.className = 'edit-field__input';
+  if (value !== null && value !== undefined) input.value = String(value);
+  field.append(input);
+  return { field, input };
+}
+
 function formatDue(card) {
   const date = shortDate(card.due);
   if (card.overdue) return `${date} · ${Math.abs(card.due_in_days)}d overdue`;
@@ -267,12 +289,6 @@ function shortDate(iso) {
   return Number.isNaN(date.getTime())
     ? iso
     : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-}
-
-function isoFromToday(days) {
-  const date = new Date();
-  date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
 }
 
 function capitalise(word) {

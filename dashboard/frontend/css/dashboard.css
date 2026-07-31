@@ -1572,6 +1572,76 @@ body.is-card-dragging .pages { overflow-x: hidden; }
   color: var(--muted);
 }
 
+/* Numeric + date entry: big touch targets that also take the keyboard. */
+.edit-fields {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.6rem;
+}
+
+.edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1 1 0;
+  min-width: 5rem;
+}
+
+.edit-field__label {
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.edit-field__input,
+.edit-date {
+  width: 100%;
+  min-height: 2.9rem;
+  padding: 0 0.7rem;
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+}
+
+.edit-date { color-scheme: dark; }
+
+.edit-field__input:focus,
+.edit-date:focus {
+  outline: none;
+  border-color: var(--series-1);
+}
+
+.edit-fields__of {
+  padding-bottom: 0.7rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.edit-remaining {
+  margin: 0.5rem 0 0;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Count summary on the card face, under the meter. */
+.card__counts {
+  margin: 0.25rem 0 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
 /* The posting address, shown on the wall so nobody has to be told it twice. */
 .drop-url {
   flex: none;

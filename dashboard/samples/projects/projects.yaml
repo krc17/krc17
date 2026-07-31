@@ -14,6 +14,11 @@
 #   owner       shown as initials + name on the card
 #   progress    0-100. Omit it and progress is derived from milestones,
 #               or from the column if there are none.
+#   total       optional. With "complete", the card tracks a count: progress
+#   complete    becomes complete/total, the card shows how many are left, and
+#               reaching total moves the card to Done on its own. These win
+#               over "progress" when both are present. Set from the wall by
+#               tapping the card and typing Total / Complete.
 #   due         YYYY-MM-DD. Drives the "3d left" / "overdue" badge.
 #   health      on-track | at-risk | off-track. Omit it and health is derived
 #               from the due date and progress.
@@ -37,7 +42,8 @@ projects:
     owner: Kevin Caughman
     status: In Progress
     priority: high
-    progress: 65
+    total: 8
+    complete: 5
     due: 2026-08-14
     tags: [infra, proxmox]
     milestones:

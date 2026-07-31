@@ -68,8 +68,8 @@ Tap any card on the TV to open it. From there you can:
 
 - **Move it** to another column, or press and hold and drag it
 - **Tick milestones** as they complete
-- **Set progress** — nudge by ±10/±25, or jump to 0/25/50/75/100%
-- **Change the due date** — shift by a day or a week, or set Today / +2 wks / +1 mo
+- **Set progress** — type **Complete** and **Total**; it shows the % and how many are left, and 100% moves the card to Done
+- **Change the due date** — pick a date with the date field (touch or keyboard)
 
 Everything writes straight back to the project file, so the board and the file
 never disagree. If you would rather edit the file directly, it is

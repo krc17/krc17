@@ -232,6 +232,29 @@ async def set_progress(
     return JSONResponse(result.as_dict(), status_code=200 if result.ok else 409)
 
 
+@app.post("/api/projects/{card_id}/completion")
+async def set_completion(
+    card_id: str, request: Request, payload: dict[str, Any] = Body(...)
+) -> JSONResponse:
+    """Set total + complete counts; the board derives the percentage and, at
+    100%, moves the card to Done."""
+    if not _is_local(request):
+        return JSONResponse({"ok": False, "detail": "read-only from here"}, status_code=403)
+
+    try:
+        total = int(payload.get("total"))
+        complete = int(payload.get("complete"))
+    except (TypeError, ValueError):
+        return JSONResponse(
+            {"ok": False, "detail": "total and complete must be numbers"}, status_code=400
+        )
+
+    result = await asyncio.to_thread(board_writer.set_completion, card_id, total, complete)
+    if result.ok:
+        hub.publish("content", {"channel": "projects"})
+    return JSONResponse(result.as_dict(), status_code=200 if result.ok else 409)
+
+
 @app.post("/api/projects/{card_id}/due")
 async def set_due(card_id: str, request: Request, payload: dict[str, Any] = Body(...)) -> JSONResponse:
     """Shift the due date by whole days, or set/clear it explicitly."""

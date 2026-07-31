@@ -182,7 +182,18 @@ def _normalise(project: dict[str, Any], columns: list[str]) -> dict[str, Any] | 
     due = _parse_date(project.get("due") or project.get("due_date") or project.get("target"))
     milestones = _milestones(project.get("milestones"))
     explicit = project.get("progress", project.get("percent_complete"))
-    progress = _progress(project, column, milestones)
+
+    # Count-based progress: when a card carries total + complete, the percentage
+    # and "remaining" come straight from those, and manual progress is ignored.
+    total, complete = _completion(project)
+    if total is not None:
+        # Half-up rounding to match the sheet's live preview (JS Math.round),
+        # so the meter never ticks by 1% between typing and the saved value.
+        progress = int(min(complete, total) / total * 100 + 0.5)
+        remaining = max(0, total - complete)
+    else:
+        progress = _progress(project, column, milestones)
+        remaining = None
     health = _health(project, column, due, progress)
 
     return {
@@ -195,8 +206,11 @@ def _normalise(project: dict[str, Any], columns: list[str]) -> dict[str, Any] | 
         "health": health,
         "priority": _priority(project.get("priority")),
         "progress": progress,
+        "total": total,
+        "complete": complete if total is not None else None,
+        "remaining": remaining,
         # Lets the detail sheet say whether a number is pinned or inferred.
-        "progress_derived": explicit is None,
+        "progress_derived": total is None and explicit is None,
         "due": due.isoformat() if due else None,
         "due_in_days": (due - date.today()).days if due else None,
         "overdue": bool(due and due < date.today() and column != "Done"),
@@ -260,6 +274,24 @@ def _milestones(raw: Any) -> list[dict[str, Any]]:
             }
         )
     return [milestone for milestone in milestones if milestone["name"]][:6]
+
+
+def _int(raw: Any) -> int | None:
+    if raw is None:
+        return None
+    try:
+        return int(float(str(raw).strip().rstrip("% ")))
+    except (TypeError, ValueError):
+        return None
+
+
+def _completion(project: dict[str, Any]) -> tuple[int | None, int | None]:
+    """Return (total, complete) when the card tracks counts, else (None, None)."""
+    total = _int(project.get("total"))
+    if total is None or total <= 0:
+        return None, None
+    complete = _int(project.get("complete", project.get("completed")))
+    return total, max(0, complete if complete is not None else 0)
 
 
 def _progress(project: dict[str, Any], column: str, milestones: list[dict[str, Any]]) -> int:

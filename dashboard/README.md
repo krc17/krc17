@@ -225,6 +225,19 @@ Paste one or more ICS URLs into `CALENDAR_ICS_URLS`, comma-separated.
 - **Google Calendar** → Settings → your calendar → *Secret address in iCal format*
 - **Outlook / Microsoft 365** → Settings → Calendar → Shared calendars → *Publish a calendar* → ICS link
 
+**Multiple calendars.** List several, comma-separated — the wall merges them
+into one month grid and agenda, gives each calendar its own colour, and shows
+a small legend so you can tell them apart. Label each one with `Name = URL` so
+the legend reads well:
+
+```
+CALENDAR_ICS_URLS=Team = https://.../team.ics, On-call = https://.../oncall.ics
+```
+
+Without a label, the calendar's own published name is used, falling back to its
+host. Every event carries a coloured left edge in the agenda, the day sheet and
+the expanded month view.
+
 Recurring events are expanded locally, so the wall shows the next real
 occurrence. Leave it blank for a clean month grid with no events.
 

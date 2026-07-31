@@ -506,6 +506,12 @@ body {
   color: var(--ink);
 }
 
+/* When several calendars are joined, each event's left edge carries its
+   calendar's colour. "In progress" green still wins -- live beats identity. */
+.panel--agenda.is-expanded .calendar__event.has-cal:not(.is-now) {
+  border-left-color: var(--cal);
+}
+
 .calendar__event-time { flex: none; font-weight: 650; font-variant-numeric: tabular-nums; }
 
 .panel--agenda.is-expanded .calendar__more {
@@ -570,6 +576,46 @@ body {
 
 .agenda__item--now .agenda__when { color: var(--status-good); }
 .agenda__item--now .agenda__title { color: var(--ink); font-weight: 600; }
+
+/* A calendar-coloured left edge, drawn inset so it never shifts the grid. */
+.agenda__item.has-cal {
+  box-shadow: inset 3px 0 0 var(--cal);
+  padding-left: 0.6rem;
+}
+
+/* =========================================================================
+   Calendar legend (shown only when more than one calendar is joined)
+   ========================================================================= */
+.calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.calendar-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--ink-2);
+  min-width: 0;
+}
+
+.calendar-legend__dot {
+  flex: none;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+}
+
+.calendar-legend__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* =========================================================================
    Document panels (takeaways & updates)
@@ -1612,3 +1658,9 @@ body.is-card-dragging .pages { overflow-x: hidden; }
 }
 
 .day-event.is-now .day-event__when { color: var(--status-good); }
+
+/* Calendar-coloured left edge in the day sheet, inset so the grid holds. */
+.day-event.has-cal {
+  box-shadow: inset 4px 0 0 var(--cal);
+  padding-left: 0.7rem;
+}

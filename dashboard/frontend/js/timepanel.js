@@ -15,19 +15,30 @@
 const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MAX_AGENDA_ITEMS = 6;
 const MAX_CHIPS_PER_DAY = 3;
+// The wall's eight categorical slots. A calendar's colour is its slot, by the
+// order it is configured; more than eight wraps rather than inventing hues.
+const PALETTE_SLOTS = 8;
+
+/** CSS colour for a calendar index, or null when there is nothing to colour. */
+function calColor(index) {
+  if (index === undefined || index === null) return null;
+  return `var(--series-${(index % PALETTE_SLOTS) + 1})`;
+}
 
 export class TimePanel {
-  constructor({ time, day, zone, calendar, agenda, daySheet }) {
+  constructor({ time, day, zone, calendar, agenda, legend, daySheet }) {
     this.timeEl = time;
     this.dayEl = day;
     this.zoneEl = zone;
     this.calendarEl = calendar;
     this.agendaEl = agenda;
+    this.legendEl = legend;
     this.daySheet = daySheet;
 
     this.timezone = undefined;
     this.offsetMs = 0;
     this.events = [];
+    this.calendars = [];
     this.renderedDay = null;
 
     this.#bindDayInteraction();
@@ -45,10 +56,32 @@ export class TimePanel {
 
   setAgenda(agenda) {
     this.events = agenda?.events ?? [];
+    this.calendars = agenda?.calendars ?? [];
+    this.renderLegend();
     this.renderAgenda();
     this.renderCalendar(this.now());
     // A day sheet left open should reflect a fresh calendar pull.
     if (this.openDayKey) this.openDay(this.openDayKey);
+  }
+
+  /** A small keyed legend, shown only when more than one calendar is joined. */
+  renderLegend() {
+    if (!this.legendEl) return;
+    if (this.calendars.length < 2) {
+      this.legendEl.hidden = true;
+      this.legendEl.replaceChildren();
+      return;
+    }
+    this.legendEl.hidden = false;
+    this.legendEl.replaceChildren(
+      ...this.calendars.map((cal) => {
+        const item = element('li', 'calendar-legend__item');
+        const dot = element('span', 'calendar-legend__dot');
+        dot.style.background = calColor(cal.index) ?? 'var(--series-1)';
+        item.append(dot, element('span', 'calendar-legend__name', cal.name || 'Calendar'));
+        return item;
+      }),
+    );
   }
 
   start() {
@@ -147,6 +180,7 @@ export class TimePanel {
       const list = element('div', 'calendar__events');
       events.slice(0, MAX_CHIPS_PER_DAY).forEach((event) => {
         const chip = element('span', `calendar__event${event.in_progress ? ' is-now' : ''}`);
+        this.#tintByCalendar(chip, event);
         if (!event.all_day) chip.append(element('span', 'calendar__event-time', this.#time(event.start)));
         chip.append(document.createTextNode(event.title));
         list.append(chip);
@@ -216,6 +250,7 @@ export class TimePanel {
       dayEvents.forEach((event) => {
         const live = event.in_progress;
         const item = element('li', `day-event${live ? ' is-now' : ''}`);
+        this.#tintByCalendar(item, event);
 
         const when = element('div', 'day-event__when');
         if (event.all_day) {
@@ -273,6 +308,7 @@ export class TimePanel {
         const start = new Date(event.start);
         const live = start <= now && new Date(event.end) >= now;
         const item = element('li', `agenda__item${live ? ' agenda__item--now' : ''}`);
+        this.#tintByCalendar(item, event);
 
         const when = element('div', 'agenda__when');
         when.textContent = live ? 'Now' : event.all_day ? 'All day' : this.#time(event.start);
@@ -320,6 +356,20 @@ export class TimePanel {
       });
     }
     return map;
+  }
+
+  /**
+   * Mark an event element with its calendar's colour. Only when more than one
+   * calendar is joined -- a single calendar needs no key, so the wall stays
+   * calm and the colour means "which calendar", nothing else.
+   */
+  #tintByCalendar(node, event) {
+    if (this.calendars.length < 2) return;
+    const color = calColor(event.cal_index);
+    if (color) {
+      node.style.setProperty('--cal', color);
+      node.classList.add('has-cal');
+    }
   }
 
   #time(iso) {

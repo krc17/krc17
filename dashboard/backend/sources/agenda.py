@@ -12,6 +12,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta, timezone
 from typing import Any
+from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -27,6 +28,9 @@ _MAX_OCCURRENCES = 60
 @dataclass
 class AgendaCache:
     events: list[dict[str, Any]] = field(default_factory=list)
+    # One entry per configured feed: {"name", "index"}. Drives the wall legend
+    # and the colour of each event, so a mixed agenda stays legible.
+    calendars: list[dict[str, Any]] = field(default_factory=list)
     fetched_at: str | None = None
     error: str | None = None
     configured: bool = False
@@ -34,6 +38,7 @@ class AgendaCache:
     def to_dict(self) -> dict[str, Any]:
         return {
             "events": self.events,
+            "calendars": self.calendars,
             "fetched_at": self.fetched_at,
             "error": self.error,
             "configured": self.configured,
@@ -41,18 +46,26 @@ class AgendaCache:
 
 
 class AgendaService:
-    def __init__(self, ics_urls: list[str], tz_name: str, horizon_days: int = 30) -> None:
-        self._urls = ics_urls
+    def __init__(
+        self, feeds: list[dict[str, str | None]], tz_name: str, horizon_days: int = 30
+    ) -> None:
+        # Normalise to {index, name, url}. index picks the colour, name labels
+        # the legend (explicit label wins; otherwise resolved at fetch time).
+        self._feeds = [
+            {"index": i, "name": (feed.get("name") or None), "url": feed["url"]}
+            for i, feed in enumerate(feeds)
+            if feed.get("url")
+        ]
         self._tz = _safe_zone(tz_name)
         self._horizon = timedelta(days=horizon_days)
-        self._cache = AgendaCache(configured=bool(ics_urls))
+        self._cache = AgendaCache(configured=bool(self._feeds))
 
     @property
     def snapshot(self) -> dict[str, Any]:
         return self._cache.to_dict()
 
     async def refresh(self) -> dict[str, Any]:
-        if not self._urls:
+        if not self._feeds:
             self._cache = AgendaCache(configured=False)
             return self.snapshot
 
@@ -62,39 +75,65 @@ class AgendaService:
             headers={"User-Agent": "TeamDashboard/1.0 (+wall display)"},
         ) as client:
             results = await asyncio.gather(
-                *(self._fetch(client, url) for url in self._urls),
+                *(self._fetch(client, feed) for feed in self._feeds),
                 return_exceptions=True,
             )
 
         events: list[dict[str, Any]] = []
+        calendars: list[dict[str, Any]] = []
         failures = 0
-        for url, result in zip(self._urls, results):
+        for feed, result in zip(self._feeds, results):
             if isinstance(result, BaseException):
-                log.warning("calendar failed: %s", result)
+                log.warning("calendar %r failed: %s", feed["url"], result)
                 failures += 1
+                # Still list it in the legend, named as best we can, so the
+                # wall shows which calendar is currently unreachable.
+                calendars.append(
+                    {"index": feed["index"], "name": self._feed_name(feed)}
+                )
                 continue
-            events.extend(result)
+            events.extend(result["events"])
+            calendars.append({"index": feed["index"], "name": result["name"]})
 
-        if failures == len(self._urls):
-            self._cache.error = "Calendar feed unreachable"
+        if failures == len(self._feeds):
+            self._cache = AgendaCache(
+                calendars=calendars,
+                error="Calendar feed unreachable",
+                configured=True,
+            )
             return self.snapshot
 
         events.sort(key=lambda event: event["start"])
         self._cache = AgendaCache(
             events=events[:40],
+            calendars=calendars,
             fetched_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
             error=f"{failures} calendar(s) unreachable" if failures else None,
             configured=True,
         )
         return self.snapshot
 
-    async def _fetch(self, client: httpx.AsyncClient, url: str) -> list[dict[str, Any]]:
-        response = await client.get(url)
+    async def _fetch(
+        self, client: httpx.AsyncClient, feed: dict[str, Any]
+    ) -> dict[str, Any]:
+        response = await client.get(feed["url"])
         response.raise_for_status()
-        return await asyncio.to_thread(self._parse, response.content)
+        return await asyncio.to_thread(self._parse, response.content, feed)
 
-    def _parse(self, payload: bytes) -> list[dict[str, Any]]:
+    def _feed_name(self, feed: dict[str, Any]) -> str:
+        """Best label for a feed without its payload: explicit, else host."""
+        if feed["name"]:
+            return feed["name"]
+        host = urlparse(feed["url"]).hostname or "Calendar"
+        return host[4:] if host.startswith("www.") else host
+
+    def _parse(self, payload: bytes, feed: dict[str, Any]) -> dict[str, Any]:
         calendar = Calendar.from_ical(payload)
+        # Explicit label wins; otherwise borrow the calendar's own published
+        # name (X-WR-CALNAME); otherwise fall back to the host.
+        name = feed["name"] or str(calendar.get("X-WR-CALNAME", "") or "").strip()
+        if not name:
+            name = self._feed_name(feed)
         now = datetime.now(self._tz)
         # Start the window at midnight so tapping "today" on the wall shows the
         # whole day, this morning's standup included -- a schedule review, not
@@ -106,13 +145,20 @@ class AgendaService:
 
         for component in calendar.walk("VEVENT"):
             try:
-                events.extend(self._expand(component, now, window_start, window_end))
+                events.extend(
+                    self._expand(component, now, window_start, window_end, feed["index"])
+                )
             except Exception as exc:  # one bad VEVENT must not drop the feed
                 log.debug("skipping event: %s", exc)
-        return events
+        return {"name": name, "events": events}
 
     def _expand(
-        self, component: Any, now: datetime, window_start: datetime, window_end: datetime
+        self,
+        component: Any,
+        now: datetime,
+        window_start: datetime,
+        window_end: datetime,
+        cal_index: int,
     ) -> list[dict[str, Any]]:
         raw_start = component.get("DTSTART")
         if raw_start is None:
@@ -150,6 +196,7 @@ class AgendaService:
                     "end": end.astimezone(self._tz).isoformat(timespec="minutes"),
                     "date": occurrence.astimezone(self._tz).date().isoformat(),
                     "in_progress": occurrence <= now <= end,
+                    "cal_index": cal_index,
                 }
             )
         return occurrences

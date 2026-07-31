@@ -60,7 +60,7 @@ hub = EventHub()
 blackboard = BlackboardStore(settings.blackboard_file)
 board_writer = BoardWriter(settings.projects_dir)
 news = NewsService(settings.news_feeds, settings.news_max_items)
-agenda = AgendaService(settings.calendar_ics_urls, settings.timezone, settings.calendar_horizon_days)
+agenda = AgendaService(settings.calendar_feeds, settings.timezone, settings.calendar_horizon_days)
 
 
 # --------------------------------------------------------------------------- #
@@ -137,7 +137,7 @@ async def get_config() -> dict[str, Any]:
         "team_name": settings.team_name,
         "timezone": settings.timezone,
         "rotation_seconds": settings.rotation_seconds,
-        "calendar_configured": bool(settings.calendar_ics_urls),
+        "calendar_configured": bool(settings.calendar_feeds),
         "drop_url": _drop_url(),
     }
 

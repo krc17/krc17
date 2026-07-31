@@ -33,6 +33,29 @@ def _env_list(name: str, default: tuple[str, ...] = ()) -> list[str]:
     return items or list(default)
 
 
+def _parse_calendar_feeds(name: str) -> list[dict[str, str | None]]:
+    """Parse ``CALENDAR_ICS_URLS`` into named feeds.
+
+    Each comma-separated entry is either a bare ICS URL or ``Label = URL``.
+    The label lets the wall tell one calendar from another (a coloured dot and
+    a legend). We only read a label when the text after the first ``=`` looks
+    like a URL, so query strings such as ``...?src=abc`` are never mistaken for
+    a name and split apart.
+    """
+    feeds: list[dict[str, str | None]] = []
+    for entry in _env_list(name):
+        label: str | None = None
+        url = entry
+        if "=" in entry:
+            head, tail = entry.split("=", 1)
+            tail = tail.strip()
+            if tail.lower().startswith(("http://", "https://")):
+                label = head.strip() or None
+                url = tail
+        feeds.append({"name": label, "url": url})
+    return feeds
+
+
 @dataclass(frozen=True)
 class Settings:
     """All tunables live here so the container is configured purely by env vars."""
@@ -52,7 +75,7 @@ class Settings:
     news_refresh_seconds: int = 600
     news_max_items: int = 40
 
-    calendar_ics_urls: list[str] = field(default_factory=list)
+    calendar_feeds: list[dict[str, str | None]] = field(default_factory=list)
     calendar_refresh_seconds: int = 900
     calendar_horizon_days: int = 30
 
@@ -79,7 +102,7 @@ def load_settings() -> Settings:
         news_feeds=_env_list("NEWS_FEEDS", DEFAULT_FEEDS),
         news_refresh_seconds=_env_int("NEWS_REFRESH_SECONDS", 600),
         news_max_items=_env_int("NEWS_MAX_ITEMS", 40),
-        calendar_ics_urls=_env_list("CALENDAR_ICS_URLS"),
+        calendar_feeds=_parse_calendar_feeds("CALENDAR_ICS_URLS"),
         calendar_refresh_seconds=_env_int("CALENDAR_REFRESH_SECONDS", 900),
         calendar_horizon_days=_env_int("CALENDAR_HORIZON_DAYS", 30),
         rotation_seconds=_env_int("ROTATION_SECONDS", 25),

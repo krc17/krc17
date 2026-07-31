@@ -5,23 +5,46 @@
 .DESCRIPTION
     Creates a private Python virtual environment, installs the dependencies,
     seeds dashboard.env from the example, and (unless -NoAutoStart) registers a
-    scheduled task so the wall comes back up on its own after a reboot or a
-    power cut. Nothing is installed machine-wide and no admin rights are needed.
+    scheduled task that starts the wall when the display user signs in.
+
+    IMPORTANT for an unattended wall: the display is a full-screen browser, and
+    a browser needs a signed-in desktop session. The logon task alone therefore
+    only relights the wall once someone signs in. For the wall to come back on
+    its own after a Windows Update reboot or a power cut, the display PC must be
+    set to sign in automatically. Pass -EnableAutoLogon to configure that, or
+    follow the printed instructions to do it by hand. Nothing is installed
+    machine-wide; only -EnableAutoLogon needs admin rights.
 
 .PARAMETER NoAutoStart
     Skip the logon scheduled task. Use this if you would rather start the
     dashboard by hand from "Start Dashboard.bat".
+
+.PARAMETER WallUser
+    The account the TV signs in as. Defaults to the current user. The logon
+    task and (if used) auto sign-in are configured for this account.
+
+.PARAMETER EnableAutoLogon
+    Configure Windows to sign WallUser in automatically at boot, so the wall
+    returns on its own after a reboot. Requires admin rights and prompts for
+    the account password. NOTE: this stores the password in the registry; on a
+    shared or sensitive machine prefer Sysinternals Autologon, which encrypts
+    it. The script prints both options.
 
 .PARAMETER Force
     Rebuild the virtual environment from scratch.
 
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File .\windows\Install-Dashboard.ps1
+
+.EXAMPLE
+    powershell -ExecutionPolicy Bypass -File .\windows\Install-Dashboard.ps1 -EnableAutoLogon
 #>
 
 [CmdletBinding()]
 param(
     [switch]$NoAutoStart,
+    [string]$WallUser = $env:USERNAME,
+    [switch]$EnableAutoLogon,
     [switch]$Force
 )
 
@@ -155,7 +178,7 @@ if ($NoAutoStart) {
     $startScript = Join-Path $PSScriptRoot 'Start-Dashboard.ps1'
     $action = New-ScheduledTaskAction -Execute 'powershell.exe' `
         -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$startScript`""
-    $trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
+    $trigger = New-ScheduledTaskTrigger -AtLogOn -User $WallUser
     # 40s delay: let the network and any mapped shares come up before we poll them.
     $trigger.Delay = 'PT40S'
     $taskSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries `
@@ -164,7 +187,81 @@ if ($NoAutoStart) {
 
     Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger `
         -Settings $taskSettings -Description 'Engineering team wall dashboard' -Force | Out-Null
-    Write-Ok "Scheduled task '$TaskName' registered for $env:USERNAME"
+    Write-Ok "Scheduled task '$TaskName' registered for $WallUser (runs at sign-in)"
+}
+
+# --------------------------------------------------------------------------- #
+# 4b. Auto sign-in - the piece that makes a reboot relight the wall by itself
+# --------------------------------------------------------------------------- #
+# The logon task needs a desktop session to open the browser. Without auto
+# sign-in the TV sits at the lock screen after a reboot until a human logs in.
+$WinlogonKey = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
+
+function Test-Administrator {
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = New-Object Security.Principal.WindowsPrincipal($identity)
+    return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+function Get-AutoLogonState {
+    try {
+        return (Get-ItemProperty -Path $WinlogonKey -Name 'AutoAdminLogon' -ErrorAction Stop).AutoAdminLogon
+    } catch { return $null }
+}
+
+if ($NoAutoStart) {
+    # No logon task means auto sign-in is moot; say nothing.
+} elseif ($EnableAutoLogon) {
+    Write-Step 'Configuring automatic sign-in'
+    if (-not (Test-Administrator)) {
+        Write-Host @"
+
+  -EnableAutoLogon needs an elevated shell (it writes a machine-wide setting).
+  Re-run this from an Administrator PowerShell, or set auto sign-in by hand:
+  run  netplwiz , untick "Users must enter a user name and password", Apply.
+
+"@ -ForegroundColor Yellow
+    } else {
+        $secure = Read-Host "Password for $WallUser (stored so the wall can sign in after a reboot)" -AsSecureString
+        $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+        try {
+            $plain = [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
+        } finally {
+            [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+        }
+        Set-ItemProperty -Path $WinlogonKey -Name 'AutoAdminLogon' -Value '1'
+        Set-ItemProperty -Path $WinlogonKey -Name 'DefaultUserName' -Value $WallUser
+        Set-ItemProperty -Path $WinlogonKey -Name 'DefaultDomainName' -Value $env:USERDOMAIN
+        Set-ItemProperty -Path $WinlogonKey -Name 'DefaultPassword' -Value $plain
+        $plain = $null
+        Write-Ok "Auto sign-in enabled for $env:USERDOMAIN\$WallUser"
+        Write-Note 'The password is stored in the registry. To store it encrypted'
+        Write-Note 'instead, clear it and use Sysinternals Autologon (see below).'
+    }
+} else {
+    if ((Get-AutoLogonState) -ne '1') {
+        Write-Host @"
+
+  REBOOT SURVIVAL - one manual step left
+  --------------------------------------
+  After a reboot (Windows Update installs them overnight) the TV shows a lock
+  screen until someone signs in. For the wall to return on its own, set the
+  display PC to sign in automatically. Pick one:
+
+    - Easiest:  run  netplwiz , untick "Users must enter a user name and
+      password", click Apply, enter the account password once.
+    - Safer (password encrypted): Sysinternals Autologon -
+      https://learn.microsoft.com/sysinternals/downloads/autologon
+    - One command here:  re-run this script from an Administrator PowerShell
+      with  -EnableAutoLogon
+
+  Also set the power plan to never sleep the display (Start Dashboard already
+  requests this, but confirm it under Settings > Power).
+
+"@ -ForegroundColor Yellow
+    } else {
+        Write-Ok 'Automatic sign-in is already enabled - the wall will return after a reboot'
+    }
 }
 
 # --------------------------------------------------------------------------- #

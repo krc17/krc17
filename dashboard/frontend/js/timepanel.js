@@ -26,13 +26,14 @@ function calColor(index) {
 }
 
 export class TimePanel {
-  constructor({ time, day, zone, calendar, agenda, legend, daySheet }) {
+  constructor({ time, day, zone, calendar, agenda, legend, status, daySheet }) {
     this.timeEl = time;
     this.dayEl = day;
     this.zoneEl = zone;
     this.calendarEl = calendar;
     this.agendaEl = agenda;
     this.legendEl = legend;
+    this.statusEl = status;
     this.daySheet = daySheet;
 
     this.timezone = undefined;
@@ -57,11 +58,49 @@ export class TimePanel {
   setAgenda(agenda) {
     this.events = agenda?.events ?? [];
     this.calendars = agenda?.calendars ?? [];
+    this.calStatus = {
+      configured: agenda?.configured ?? false,
+      error: agenda?.error ?? null,
+      fetchedAt: agenda?.fetched_at ?? null,
+    };
     this.renderLegend();
+    this.renderStatus();
     this.renderAgenda();
     this.renderCalendar(this.now());
     // A day sheet left open should reflect a fresh calendar pull.
     if (this.openDayKey) this.openDay(this.openDayKey);
+  }
+
+  /**
+   * A quiet feed is worse than a blank one: the wall keeps showing last week's
+   * schedule and people trust it. When the server reports a fetch error, say so
+   * on the wall -- with how long ago the data was actually good -- so a stale
+   * calendar reads as stale, not current.
+   */
+  renderStatus() {
+    if (!this.statusEl) return;
+    const status = this.calStatus ?? {};
+    if (!status.configured || !status.error) {
+      this.statusEl.hidden = true;
+      this.statusEl.textContent = '';
+      return;
+    }
+    const since = status.fetchedAt ? ` · last updated ${this.#ago(status.fetchedAt)}` : '';
+    this.statusEl.textContent = `⚠ ${status.error}${since}`;
+    this.statusEl.hidden = false;
+  }
+
+  /** Compact, wall-legible relative age: "just now", "12 min ago", "3 h ago". */
+  #ago(iso) {
+    const then = new Date(iso).getTime();
+    if (Number.isNaN(then)) return 'a while ago';
+    const mins = Math.max(0, Math.round((Date.now() - then) / 60000));
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins} min ago`;
+    const hours = Math.round(mins / 60);
+    if (hours < 24) return `${hours} h ago`;
+    const days = Math.round(hours / 24);
+    return days === 1 ? 'yesterday' : `${days} days ago`;
   }
 
   /** A small keyed legend, shown only when more than one calendar is joined. */

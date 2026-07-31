@@ -96,11 +96,14 @@ class AgendaService:
             calendars.append({"index": feed["index"], "name": result["name"]})
 
         if failures == len(self._feeds):
-            self._cache = AgendaCache(
-                calendars=calendars,
-                error="Calendar feed unreachable",
-                configured=True,
-            )
+            # A total outage must not blank the wall. Keep the last good events
+            # and their fetched_at, and just flag the feed as failing -- the
+            # frontend turns that stale marker into a visible "not updating"
+            # note, so people see the data is old rather than trusting it.
+            self._cache.error = "Calendar feed unreachable"
+            self._cache.configured = True
+            if not self._cache.calendars:
+                self._cache.calendars = calendars
             return self.snapshot
 
         events.sort(key=lambda event: event["start"])

@@ -617,6 +617,15 @@ body {
   white-space: nowrap;
 }
 
+/* A stale-feed marker: the calendar keeps showing its last good events, and
+   this line says so, so nobody mistakes an old schedule for the live one. */
+.calendar-status {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--status-warning);
+}
+
 /* =========================================================================
    Document panels (takeaways & updates)
    ========================================================================= */

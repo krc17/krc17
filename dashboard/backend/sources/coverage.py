@@ -72,7 +72,12 @@ class CoverageStore:
     # ----------------------------------------------------------------- #
     def load(self) -> dict[str, Any]:
         """Return {areas, engineers:[{name,area}], updated_at, errors}."""
-        located = self._locate()
+        # Under the same lock as assign(): both share one ruamel parser, and the
+        # server reads (a refresh) and writes (a drag) run in the thread pool at
+        # once. Letting a read parse while a write dumps corrupts the parser and
+        # a raced read comes back with no engineers -- the whole board vanishing.
+        with self._lock:
+            located = self._locate()
         if located is None:
             return {
                 "areas": list(DEFAULT_AREAS),

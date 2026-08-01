@@ -24,7 +24,7 @@ second later — nobody has to touch the TV.
 
 | Section | Where its content comes from |
 |---|---|
-| **Area Coverage** (page 2) | `data\coverage\coverage.yaml` — engineer cards you drag between area columns. Saved to disk and mirrored to any other screen showing the dashboard. |
+| **Area Coverage** (page 3) | `data\coverage\coverage.yaml` — engineer cards you drag between area columns. Saved to disk and mirrored to any other screen showing the dashboard. |
 | **Team Meeting Takeaways** | Every `.docx` / `.pdf` / `.md` / `.txt` in `data\meeting-takeaways`. Newest first, auto-rotating. |
 | **Team Updates** | Same, from `data\team-updates`. One file per project or per person works well. |
 | **Project Tracking** | `data\projects\projects.yaml` — a Kanban board with owners, priority, due dates, health and progress. |
@@ -42,14 +42,22 @@ If you don't have Python: `winget install --id Python.Python.3.12 --source winge
 1. Copy this `dashboard` folder onto the PC driving the TV.
 2. Double-click **`Install.bat`**.
    It builds a private virtual environment, installs the dependencies, creates
-   `dashboard.env`, and registers a task so the wall comes back on its own after
-   a reboot. No admin rights, nothing installed machine-wide.
+   `dashboard.env`, and registers a task that starts the wall when the display
+   user signs in. No admin rights, nothing installed machine-wide.
 3. Open **`dashboard.env`** in Notepad and set at least:
    - `DASHBOARD_TZ` — your timezone, e.g. `America/New_York`
    - `CALENDAR_ICS_URLS` — your calendar's ICS link (optional; see below)
 4. Double-click **`Start Dashboard.bat`**.
 
 The server starts hidden and a dedicated Edge window opens full-screen on the TV.
+
+**Coming back on its own after a reboot.** The full-screen browser needs a
+signed-in desktop session, so the logon task only relights the wall once the
+display user signs in. For an unattended TV — one that recovers by itself after
+a Windows Update reboot or a power cut — set the PC to sign in automatically:
+run `Install.bat` from an Administrator prompt with `-EnableAutoLogon`, or set
+it by hand (`netplwiz`, or Sysinternals Autologon for an encrypted password).
+The installer prints these steps and warns when auto sign-in isn't configured.
 
 On a fresh install the `data\` folders start empty, so `Install.bat` seeds them
 with the examples in `samples\` — the wall looks alive on first run. It only
@@ -92,7 +100,8 @@ address on itself, under Team Updates, so nobody has to be told it twice.
 
 Hand out `docs/Team-Dashboard-One-Pager.pdf` -- a single printable page
 covering posting, what reads well on a wall, the project board and the
-area-coverage board. Pin one by the TV, email the rest.
+area-coverage board. Pin one by the TV, email the rest. There is a companion
+`docs/Formatting-One-Pager.pdf` for anyone who wants the exact formatting rules.
 
 **What the drop page accepts:** `.docx`, `.pdf`, `.md`, `.txt`, up to 25 MB.
 Filenames are rebuilt from safe characters, path traversal is refused, and a
@@ -142,6 +151,11 @@ Drop files in the folder. That's the whole workflow.
   Scanned PDFs need OCR first; this reads text, not pictures of text.
 - **Markdown** / **plain text** — `#` headings and `-` bullets render as you'd expect.
 
+For a printable authoring guide — exactly which headings, bullets and tables
+render (and what doesn't: bold, code blocks, Markdown tables, images), across
+both document folders and the project board — hand out
+`docs/Formatting-One-Pager.pdf` (source: `docs/FORMATTING-ONE-PAGER.md`).
+
 Files are ordered newest-first and the panel cycles through them every 25
 seconds (`ROTATION_SECONDS`). Touch a panel to hold it — rotation resumes on its
 own after 90 seconds. The `‹ ›` buttons page manually, and `⤢` blows the panel
@@ -178,10 +192,13 @@ Only `title` is required. Everything else has a sensible fallback:
 - **Health** (on-track / at-risk / off-track) is derived from the due date and
   progress unless you set it explicitly. Past due reads off-track; under a week
   out with less than 75% done reads at-risk.
-- **Progress** falls back to the share of completed milestones, then to the
-  column.
-- **Status** accepts what people actually type — `wip`, `qa`, `on hold`,
-  `shipped` all land in the right column.
+- **Progress** — set `total` + `complete` to track a count (progress becomes
+  `complete/total`, the card shows how many are left, and reaching the total
+  moves it to **Done**). Otherwise it falls back to a plain `progress:` value,
+  then the share of completed milestones, then the column.
+- **Status** accepts what people actually type — `wip`, `qa`, `ready`,
+  `shipped` all land in the right column. The columns are To Do, Selected,
+  In Progress, In Review and Done (change them under `board.columns`).
 
 Cards sort most-urgent-first inside each column: overdue, then priority, then
 due date. You can split projects across several `.yaml`/`.json` files in the
@@ -245,6 +262,10 @@ the expanded month view.
 
 Recurring events are expanded locally, so the wall shows the next real
 occurrence. Leave it blank for a clean month grid with no events.
+
+If a feed stops answering, the wall keeps the last good events and shows a small
+amber line under the grid ("Calendar feed unreachable · last updated 2 h ago"),
+so an old schedule reads as old rather than being mistaken for the live one.
 
 > The secret ICS link grants read access to that calendar to anyone who has it.
 > Keep `dashboard.env` off shared drives and out of version control.
@@ -324,7 +345,9 @@ compile. Edit a file in `frontend\` and reload the TV.
 | `GET /api/state` | Everything at once — what a fresh screen loads |
 | `GET /api/stream` | Server-sent events; pushes `content` updates per channel |
 | `GET /api/takeaways`, `/api/updates`, `/api/projects`, `/api/coverage`, `/api/news`, `/api/agenda` | Individual panels |
+| `POST /api/projects/{id}/status`, `/completion`, `/due`, `/milestone` | Move a card, set its Total/Complete counts, set its due date, tick a milestone (loopback only) |
 | `POST /api/coverage/{engineer}/area` | Reassign an engineer to an area (loopback only) |
+| `POST /api/upload` | Post a document to a watched folder (allowed from the LAN) |
 | `GET /api/health` | Liveness, plus how many screens are connected |
 
 ---

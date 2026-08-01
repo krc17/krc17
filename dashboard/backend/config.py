@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
+
+# A trailing #hex colour on a calendar label, e.g. "Team #2e8b57".
+_HEX_COLOUR = re.compile(r"^(.*?)\s+(#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3})$")
 
 DEFAULT_FEEDS = (
     "https://feeds.bbci.co.uk/news/world/rss.xml",
@@ -34,25 +38,31 @@ def _env_list(name: str, default: tuple[str, ...] = ()) -> list[str]:
 
 
 def _parse_calendar_feeds(name: str) -> list[dict[str, str | None]]:
-    """Parse ``CALENDAR_ICS_URLS`` into named feeds.
+    """Parse ``CALENDAR_ICS_URLS`` into named, optionally-coloured feeds.
 
-    Each comma-separated entry is either a bare ICS URL or ``Label = URL``.
-    The label lets the wall tell one calendar from another (a coloured dot and
-    a legend). We only read a label when the text after the first ``=`` looks
-    like a URL, so query strings such as ``...?src=abc`` are never mistaken for
-    a name and split apart.
+    Each comma-separated entry is either a bare ICS URL or ``Label = URL``,
+    where the label may end with a colour: ``Team #2e8b57 = URL``. The label
+    lets the wall tell one calendar from another (a coloured dot and a legend);
+    the colour, when given, overrides the automatic palette colour. We only read
+    a label when the text after the first ``=`` looks like a URL, so query
+    strings such as ``...?src=abc`` are never mistaken for a name and split apart.
     """
     feeds: list[dict[str, str | None]] = []
     for entry in _env_list(name):
         label: str | None = None
+        colour: str | None = None
         url = entry
         if "=" in entry:
             head, tail = entry.split("=", 1)
             tail = tail.strip()
             if tail.lower().startswith(("http://", "https://")):
-                label = head.strip() or None
+                head = head.strip()
+                match = _HEX_COLOUR.match(head)
+                if match:
+                    head, colour = match.group(1).strip(), match.group(2).lower()
+                label = head or None
                 url = tail
-        feeds.append({"name": label, "url": url})
+        feeds.append({"name": label, "url": url, "color": colour})
     return feeds
 
 

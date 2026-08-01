@@ -249,16 +249,24 @@ Paste one or more ICS URLs into `CALENDAR_ICS_URLS`, comma-separated.
 
 **Multiple calendars.** List several, comma-separated — the wall merges them
 into one month grid and agenda, gives each calendar its own colour, and shows
-a small legend so you can tell them apart. Label each one with `Name = URL` so
-the legend reads well:
+a small legend so you can tell them apart (colours and the legend appear once
+there are two or more). Label each one with `Name = URL` so the legend reads well:
 
 ```
 CALENDAR_ICS_URLS=Team = https://.../team.ics, On-call = https://.../oncall.ics
 ```
 
+Each calendar gets an automatic colour from the palette. **To pick your own,
+put a `#hex` after the name** — no touchscreen or code needed, just this file:
+
+```
+CALENDAR_ICS_URLS=Team #2e8b57 = https://.../team.ics, On-call #d55181 = https://.../oncall.ics
+```
+
 Without a label, the calendar's own published name is used, falling back to its
-host. Every event carries a coloured left edge in the agenda, the day sheet and
-the expanded month view.
+host. Every event carries its calendar's colour on its left edge in the agenda,
+the day sheet and the expanded month view, and a **multi-day event shows on
+every day it covers**.
 
 Recurring events are expanded locally, so the wall shows the next real
 occurrence. Leave it blank for a clean month grid with no events.

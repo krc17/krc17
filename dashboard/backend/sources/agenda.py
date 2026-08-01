@@ -24,6 +24,13 @@ log = logging.getLogger(__name__)
 _FETCH_TIMEOUT = 15.0
 _MAX_OCCURRENCES = 60
 
+# The wall's validated categorical palette (mirrors --series-1..8 in the CSS).
+# A calendar without an explicit colour takes the next slot, by config order.
+_PALETTE = (
+    "#3987e5", "#d95926", "#199e70", "#c98500",
+    "#d55181", "#008300", "#9085e9", "#e66767",
+)
+
 
 @dataclass
 class AgendaCache:
@@ -49,12 +56,16 @@ class AgendaService:
     def __init__(
         self, feeds: list[dict[str, str | None]], tz_name: str, horizon_days: int = 30
     ) -> None:
-        # Normalise to {index, name, url}. index picks the colour, name labels
-        # the legend (explicit label wins; otherwise resolved at fetch time).
+        # Normalise to {index, name, url, color}. index picks the automatic
+        # colour, an explicit color overrides it, name labels the legend.
         self._feeds = [
-            {"index": i, "name": (feed.get("name") or None), "url": feed["url"]}
-            for i, feed in enumerate(feeds)
-            if feed.get("url")
+            {
+                "index": i,
+                "name": (feed.get("name") or None),
+                "url": feed["url"],
+                "color": (feed.get("color") or None),
+            }
+            for i, feed in enumerate(feed for feed in feeds if feed.get("url"))
         ]
         self._tz = _safe_zone(tz_name)
         self._horizon = timedelta(days=horizon_days)
@@ -89,11 +100,21 @@ class AgendaService:
                 # Still list it in the legend, named as best we can, so the
                 # wall shows which calendar is currently unreachable.
                 calendars.append(
-                    {"index": feed["index"], "name": self._feed_name(feed)}
+                    {
+                        "index": feed["index"],
+                        "name": self._feed_name(feed),
+                        "color": self._feed_color(feed),
+                    }
                 )
                 continue
             events.extend(result["events"])
-            calendars.append({"index": feed["index"], "name": result["name"]})
+            calendars.append(
+                {
+                    "index": feed["index"],
+                    "name": result["name"],
+                    "color": self._feed_color(feed),
+                }
+            )
 
         if failures == len(self._feeds):
             # A total outage must not blank the wall. Keep the last good events
@@ -130,6 +151,10 @@ class AgendaService:
         host = urlparse(feed["url"]).hostname or "Calendar"
         return host[4:] if host.startswith("www.") else host
 
+    def _feed_color(self, feed: dict[str, Any]) -> str:
+        """The feed's colour: the one it was given, else its palette slot."""
+        return feed["color"] or _PALETTE[feed["index"] % len(_PALETTE)]
+
     def _parse(self, payload: bytes, feed: dict[str, Any]) -> dict[str, Any]:
         calendar = Calendar.from_ical(payload)
         # Explicit label wins; otherwise borrow the calendar's own published
@@ -146,10 +171,11 @@ class AgendaService:
         window_end = now + self._horizon
         events: list[dict[str, Any]] = []
 
+        color = self._feed_color(feed)
         for component in calendar.walk("VEVENT"):
             try:
                 events.extend(
-                    self._expand(component, now, window_start, window_end, feed["index"])
+                    self._expand(component, now, window_start, window_end, color)
                 )
             except Exception as exc:  # one bad VEVENT must not drop the feed
                 log.debug("skipping event: %s", exc)
@@ -161,7 +187,7 @@ class AgendaService:
         now: datetime,
         window_start: datetime,
         window_end: datetime,
-        cal_index: int,
+        color: str,
     ) -> list[dict[str, Any]]:
         raw_start = component.get("DTSTART")
         if raw_start is None:
@@ -199,7 +225,7 @@ class AgendaService:
                     "end": end.astimezone(self._tz).isoformat(timespec="minutes"),
                     "date": occurrence.astimezone(self._tz).date().isoformat(),
                     "in_progress": occurrence <= now <= end,
-                    "cal_index": cal_index,
+                    "color": color,
                 }
             )
         return occurrences

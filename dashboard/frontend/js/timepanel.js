@@ -15,14 +15,11 @@
 const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MAX_AGENDA_ITEMS = 6;
 const MAX_CHIPS_PER_DAY = 3;
-// The wall's eight categorical slots. A calendar's colour is its slot, by the
-// order it is configured; more than eight wraps rather than inventing hues.
-const PALETTE_SLOTS = 8;
+const MAX_EVENT_SPAN_DAYS = 90; // guard against a runaway open-ended event
 
-/** CSS colour for a calendar index, or null when there is nothing to colour. */
-function calColor(index) {
-  if (index === undefined || index === null) return null;
-  return `var(--series-${(index % PALETTE_SLOTS) + 1})`;
+/** Colour resolved by the backend (explicit or palette), or null. */
+function eventColor(event) {
+  return event?.color ?? null;
 }
 
 export class TimePanel {
@@ -125,7 +122,7 @@ export class TimePanel {
       ...this.calendars.map((cal) => {
         const item = element('li', 'calendar-legend__item');
         const dot = element('span', 'calendar-legend__dot');
-        dot.style.background = calColor(cal.index) ?? 'var(--series-1)';
+        dot.style.background = cal.color || 'var(--series-1)';
         item.append(dot, element('span', 'calendar-legend__name', cal.name || 'Calendar'));
         return item;
       }),
@@ -449,11 +446,15 @@ export class TimePanel {
   /* ---------------------------------------------------------------- */
   #eventsByDay() {
     // Group by calendar date, all-day first then chronological, so both the
-    // grid chips and the day sheet read in the order the day happens.
+    // grid chips and the day sheet read in the order the day happens. A
+    // multi-day event lands on every day it covers -- the agenda "Up next"
+    // list still shows it once, because that reads the flat event list.
     const map = new Map();
     for (const event of this.events) {
-      if (!map.has(event.date)) map.set(event.date, []);
-      map.get(event.date).push(event);
+      for (const key of this.#daysSpanned(event)) {
+        if (!map.has(key)) map.set(key, []);
+        map.get(key).push(event);
+      }
     }
     for (const list of map.values()) {
       list.sort((a, b) => {
@@ -465,13 +466,34 @@ export class TimePanel {
   }
 
   /**
+   * The calendar dates an event covers, as YYYY-MM-DD keys. All-day ends are
+   * exclusive (a 24th->27th event ends at midnight on the 28th), so the last
+   * day is the instant before the end.
+   */
+  #daysSpanned(event) {
+    const startKey = event.date;
+    const end = new Date(event.end);
+    if (Number.isNaN(end.getTime())) return [startKey];
+    const lastKey = this.dateKey(new Date(end.getTime() - 60000));
+    if (lastKey <= startKey) return [startKey];
+
+    const keys = [];
+    let key = startKey;
+    for (let i = 0; i < MAX_EVENT_SPAN_DAYS && key <= lastKey; i += 1) {
+      keys.push(key);
+      key = nextDayKey(key);
+    }
+    return keys;
+  }
+
+  /**
    * Mark an event element with its calendar's colour. Only when more than one
    * calendar is joined -- a single calendar needs no key, so the wall stays
    * calm and the colour means "which calendar", nothing else.
    */
   #tintByCalendar(node, event) {
     if (this.calendars.length < 2) return;
-    const color = calColor(event.cal_index);
+    const color = eventColor(event);
     if (color) {
       node.style.setProperty('--cal', color);
       node.classList.add('has-cal');
@@ -507,6 +529,13 @@ function element(tag, className, text) {
 
 function pad(value) {
   return String(value).padStart(2, '0');
+}
+
+/** The YYYY-MM-DD key of the day after `key` (calendar-safe, DST-proof). */
+function nextDayKey(key) {
+  const [year, month, day] = key.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day + 1));
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
 }
 
 function shortZone(timezone) {

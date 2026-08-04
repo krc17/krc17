@@ -364,6 +364,33 @@ async def upload(
     )
 
 
+@app.post("/api/{channel}/archive")
+async def archive_document(
+    channel: str, request: Request, payload: dict[str, Any] = Body(...)
+) -> JSONResponse:
+    """Move a document out of the wall into its folder's archive/ subfolder.
+
+    Loopback-only, like the other writes: a browser watching from a desk can
+    read the wall but not rearrange it. The move is reversible -- the file is
+    still on disk under archive/."""
+    if not _is_local(request):
+        return JSONResponse({"ok": False, "detail": "read-only from here"}, status_code=403)
+
+    folders = {"takeaways": settings.takeaways_dir, "updates": settings.updates_dir}
+    folder = folders.get(channel)
+    if folder is None:
+        return JSONResponse({"ok": False, "detail": "unknown channel"}, status_code=404)
+
+    filename = str(payload.get("filename", "")).strip()
+    if not filename:
+        return JSONResponse({"ok": False, "detail": "filename is required"}, status_code=400)
+
+    result = await asyncio.to_thread(documents.archive_file, folder, filename)
+    if result["ok"]:
+        hub.publish("content", {"channel": channel})
+    return JSONResponse(result, status_code=200 if result["ok"] else 400)
+
+
 @app.get("/drop")
 async def drop_page() -> FileResponse:
     """The page the team opens to post files. Linked from the wall's QR."""

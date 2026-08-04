@@ -10,6 +10,7 @@ from __future__ import annotations
 import html
 import logging
 import re
+import shutil
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -19,6 +20,7 @@ log = logging.getLogger(__name__)
 
 SUPPORTED_SUFFIXES = {".docx", ".pdf", ".md", ".markdown", ".txt"}
 MAX_BLOCKS = 240
+ARCHIVE_DIRNAME = "archive"
 
 _BULLET_PREFIX = re.compile(r"^\s*([-*•‣◦⁃∙]|\d{1,2}[.)])\s+")
 _MD_HEADING = re.compile(r"^(#{1,6})\s+(.*)$")
@@ -80,6 +82,39 @@ def load_folder(folder: Path) -> list[dict[str, Any]]:
     documents.sort(key=lambda doc: doc.modified_epoch, reverse=True)
     _prune_cache(folder, {str(path) for path in folder.iterdir()})
     return [doc.to_dict() for doc in documents]
+
+
+def archive_file(folder: Path, filename: str) -> dict[str, Any]:
+    """Move one document into the folder's ``archive`` subfolder.
+
+    The loader only lists top-level files, so a file inside ``archive/`` simply
+    stops appearing on the wall -- nothing is deleted, and it can be moved back
+    by hand. ``filename`` must be a bare name in this folder; anything with a
+    path separator is refused, so this cannot reach outside the folder.
+    """
+    name = Path(filename).name
+    if not name or name != filename or name.startswith("."):
+        return {"ok": False, "detail": "invalid filename"}
+
+    source = folder / name
+    if not source.is_file():
+        return {"ok": False, "detail": "file not found"}
+
+    dest_dir = folder / ARCHIVE_DIRNAME
+    dest_dir.mkdir(exist_ok=True)
+    dest = dest_dir / name
+    if dest.exists():
+        # Keep a same-named earlier archive rather than clobbering it.
+        dest = dest_dir / f"{source.stem}-{datetime.now():%Y%m%d-%H%M%S}{source.suffix}"
+
+    try:
+        shutil.move(str(source), str(dest))
+    except OSError as exc:
+        log.exception("archive failed")
+        return {"ok": False, "detail": f"could not archive: {exc.strerror}"}
+    _cache.pop(str(source), None)
+    log.info("archived %s -> %s", name, dest_dir)
+    return {"ok": True, "detail": name}
 
 
 def _load_cached(path: Path) -> Document:

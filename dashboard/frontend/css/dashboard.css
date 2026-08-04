@@ -255,6 +255,16 @@ body {
 .tool--icon { padding: 0; font-size: 1.15rem; line-height: 1; }
 .tool--danger:hover { border-color: var(--status-critical); color: #fff; }
 
+.tool--archive svg { display: block; }
+
+/* First tap arms the archive button; a second tap within a few seconds
+   confirms. The amber state makes "tap again" unmistakable on the wall. */
+.tool.is-arming {
+  color: var(--status-warning);
+  border-color: var(--status-warning);
+  background: var(--surface-3);
+}
+
 /* The way off the coverage page, since a card drag captures the pointer. */
 .tool--back {
   gap: 0.35rem;

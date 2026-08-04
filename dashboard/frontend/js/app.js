@@ -25,6 +25,7 @@ const panels = {
     body: document.getElementById('takeaways-body'),
     foot: document.getElementById('takeaways-foot'),
     pager: document.getElementById('takeaways-pager'),
+    onArchive: archiveDoc,
     emptyHeadline: 'No meeting takeaways yet',
     emptyHint: 'Drop a Word, PDF, or Markdown file into the takeaways folder and it appears here within a second.',
     emptyPath: 'data\\meeting-takeaways',
@@ -34,11 +35,29 @@ const panels = {
     body: document.getElementById('updates-body'),
     foot: document.getElementById('updates-foot'),
     pager: document.getElementById('updates-pager'),
+    onArchive: archiveDoc,
     emptyHeadline: 'No team updates yet',
     emptyHint: 'Each file in the updates folder becomes a card. One file per project or per person works well.',
     emptyPath: 'data\\team-updates',
   }),
 };
+
+/** Move the shown document into its folder's archive/ subfolder. */
+async function archiveDoc(channel, filename) {
+  try {
+    const response = await fetch(`/api/${encodeURIComponent(channel)}/archive`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename }),
+    });
+    const result = await response.json();
+    toast(result.ok ? `Archived ${filename}` : (result.detail || 'Could not archive that file.'));
+  } catch (error) {
+    console.warn('archive failed', error);
+    toast('Could not archive that file.');
+  }
+  await refresh(channel);
+}
 
 const timePanel = new TimePanel({
   time: document.getElementById('clock-time'),

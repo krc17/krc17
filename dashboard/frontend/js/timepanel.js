@@ -280,6 +280,22 @@ export class TimePanel {
     cell.append(element('span', 'calendar__num', String(day)));
 
     if (events.length) {
+      // Compact grid: one dot per distinct calendar with an event that day, in
+      // that calendar's colour, so a glance shows which calendars are busy. The
+      // expanded view hides these and shows the coloured chips instead.
+      const dots = element('div', 'calendar__dots');
+      const seen = [];
+      for (const event of events) {
+        const color = event.color || 'var(--series-1)';
+        if (seen.includes(color)) continue;
+        seen.push(color);
+        const dot = element('span', 'calendar__dot');
+        dot.style.background = color;
+        dots.append(dot);
+        if (seen.length >= 4) break; // more than four calendars on one day is noise
+      }
+      cell.append(dots);
+
       const list = element('div', 'calendar__events');
       events.slice(0, MAX_CHIPS_PER_DAY).forEach((event) => {
         const chip = element('span', `calendar__event${event.in_progress ? ' is-now' : ''}`);

@@ -345,21 +345,27 @@ body {
   background: var(--series-1);
 }
 
-/* A dot marks days with events — never colour alone; the agenda lists them.
-   Hidden once the panel expands, where the event chips carry the same signal. */
-.calendar__day--has-events::after {
-  content: "";
+/* Dots mark days with events, one per calendar in that calendar's colour, so a
+   day with events from two calendars shows two dots. Hidden once the panel
+   expands, where the coloured event chips carry the same signal. */
+.calendar__dots {
   position: absolute;
   bottom: 3px;
   left: 50%;
   transform: translateX(-50%);
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--series-4);
+  display: flex;
+  gap: 3px;
 }
 
-.calendar__day--today.calendar__day--has-events::after { background: var(--plane); }
+.calendar__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+/* On the filled "today" cell, a ring keeps every dot visible — including a dot
+   the same colour as the highlight. */
+.calendar__day--today .calendar__dot { box-shadow: 0 0 0 1px var(--plane); }
 
 /* Event chips: never rendered in the compact grid, revealed when expanded. */
 .calendar__events { display: none; }
@@ -394,8 +400,8 @@ body {
 .panel--agenda.is-expanded .calendar__num { align-self: flex-start; font-weight: 600; }
 .panel--agenda.is-expanded .calendar__day--today .calendar__num { color: var(--plane); }
 
-/* In the big view the dot is redundant — the chips below say the same thing. */
-.panel--agenda.is-expanded .calendar__day--has-events::after { display: none; }
+/* In the big view the dots are redundant — the chips below say the same thing. */
+.panel--agenda.is-expanded .calendar__dots { display: none; }
 
 .panel--agenda.is-expanded .calendar__events {
   display: flex;

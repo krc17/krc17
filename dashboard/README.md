@@ -218,7 +218,7 @@ The board is not read-only. On the display itself:
 |---|---|
 | **Tap a card** | Opens its detail sheet: full description, every milestone, tags, and buttons to move it to any other column. |
 | **Tick a milestone** | Writes `done: true` back to the YAML. Progress recalculates from the milestone count unless you set `progress:` explicitly. |
-| **Set progress by count** | Type or tap in **Complete** and **Total**; the percentage and "remaining" follow, and reaching the total moves the card to **Done** on its own. Written back as `total:` / `complete:`. |
+| **Set progress by count** | Tap **Complete** or **Total** and a numpad pops out (a physical keyboard works too); the percentage and "remaining" follow as you enter, and reaching the total moves the card to **Done** on its own. Written back as `total:` / `complete:`. |
 | **Change the due date** | Pick a date (touch or keyboard) in the date field; **Clear** removes it. |
 | **Press and hold a card, then drag** | Lifts the card and drops it in another column. |
 

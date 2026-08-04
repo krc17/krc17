@@ -95,6 +95,12 @@ export class CardDetail {
     const remaining = el('p', 'edit-remaining');
     wrap.append(remaining);
 
+    // On a kiosk TV the OS on-screen keyboard often does not appear, so a
+    // fingertip has no way to type into these fields. Give them an in-app
+    // numpad that pops out on focus; a physical keyboard still works too.
+    const numpad = this.#numpad();
+    wrap.append(numpad.el);
+
     const readInt = (input) => {
       const n = parseInt(input.value, 10);
       return Number.isFinite(n) ? n : null;
@@ -116,15 +122,85 @@ export class CardDetail {
       if (t === null || t <= 0) return; // a total is required to save
       this.onCompletion?.(card.id, { total: t, complete: Math.max(0, readInt(complete.input) ?? 0) });
     };
-    [complete.input, total.input].forEach((input) => {
+    [
+      [complete.input, 'Complete'],
+      [total.input, 'Total'],
+    ].forEach(([input, label]) => {
+      // inputmode=none suppresses the OS soft keyboard (which the kiosk hides
+      // anyway) without blocking a physical keyboard; the numpad handles touch.
+      input.inputMode = 'none';
       input.addEventListener('input', paint);
       input.addEventListener('change', commit);
+      input.addEventListener('focus', () => numpad.open(input, label));
       input.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') { event.preventDefault(); input.blur(); commit(); }
       });
     });
     paint();
     return wrap;
+  }
+
+  /**
+   * A small on-screen number pad shared by the numeric fields. It edits the
+   * focused input and fires the same input/change events typing would, so the
+   * meter and commit logic need no special case. Crucially it never lets a key
+   * press steal focus from the field -- a blur would commit and re-render the
+   * whole sheet mid-entry -- so pointerdown is swallowed and the field keeps
+   * focus until Done.
+   */
+  #numpad() {
+    const panel = el('div', 'numpad');
+    panel.hidden = true;
+
+    const head = el('div', 'numpad__head');
+    const label = el('span', 'numpad__label', '');
+    head.append(label);
+    panel.append(head);
+
+    const grid = el('div', 'numpad__grid');
+    const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'back'];
+    const faces = { clear: 'C', back: '⌫' };
+    keys.forEach((key) => {
+      const button = el('button', `numpad__key${key === 'clear' || key === 'back' ? ' numpad__key--alt' : ''}`, faces[key] ?? key);
+      button.type = 'button';
+      button.dataset.key = key;
+      grid.append(button);
+    });
+    panel.append(grid);
+
+    const done = el('button', 'numpad__done', 'Done');
+    done.type = 'button';
+    done.dataset.key = 'done';
+    panel.append(done);
+
+    let active = null;
+    // Keep focus on the field: without this, tapping a key blurs the input,
+    // which fires change -> commit -> the sheet re-renders under our feet.
+    panel.addEventListener('pointerdown', (event) => event.preventDefault());
+    panel.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-key]');
+      if (!button || !active) return;
+      const key = button.dataset.key;
+      if (key === 'done') {
+        active.dispatchEvent(new Event('change', { bubbles: true }));
+        panel.hidden = true;
+        active = null;
+        return;
+      }
+      if (key === 'back') active.value = active.value.slice(0, -1);
+      else if (key === 'clear') active.value = '';
+      else if (active.value.length < 6) active.value = String(Number(active.value + key));
+      active.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    return {
+      el: panel,
+      open(input, name) {
+        active = input;
+        label.textContent = `Editing ${name}`;
+        panel.hidden = false;
+      },
+    };
   }
 
   #dueControls(card) {

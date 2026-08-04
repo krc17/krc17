@@ -1642,6 +1642,66 @@ body.is-card-dragging .pages { overflow-x: hidden; }
   font-variant-numeric: tabular-nums;
 }
 
+/* Pop-out numpad for the numeric fields, so a fingertip can enter values on a
+   kiosk where the OS keyboard never appears. */
+.numpad {
+  margin-top: 0.7rem;
+  padding: 0.6rem;
+  background: var(--plane);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+}
+
+.numpad[hidden] { display: none; }
+
+.numpad__head { margin-bottom: 0.5rem; }
+
+.numpad__label {
+  font-size: 0.74rem;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.numpad__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+}
+
+.numpad__key {
+  min-height: 3.2rem;
+  font: inherit;
+  font-size: 1.35rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.numpad__key:active { transform: translateY(1px); background: var(--surface-3); }
+.numpad__key--alt { color: var(--ink-2); font-size: 1.15rem; }
+
+.numpad__done {
+  width: 100%;
+  margin-top: 0.4rem;
+  min-height: 2.9rem;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 650;
+  color: var(--plane);
+  background: var(--series-1);
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.numpad__done:active { transform: translateY(1px); }
+
 /* The posting address, shown on the wall so nobody has to be told it twice. */
 .drop-url {
   flex: none;

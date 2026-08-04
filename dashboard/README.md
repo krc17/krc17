@@ -162,8 +162,7 @@ own after 90 seconds. The `‹ ›` buttons page manually, and `⤢` blows the p
 up full-screen for a closer read.
 
 **Archiving.** The box icon in a panel's header archives the document currently
-showing. It's a two-tap action — the button turns amber, and a second tap within
-a few seconds confirms — so a stray touch on the wall can't make a file vanish.
+showing; a short "Archived …" toast confirms it.
 Archiving moves the file into an `archive\` subfolder of that folder
 (`data\team-updates\archive`, `data\meeting-takeaways\archive`); nothing is
 deleted, it just stops showing on the wall, and you can move it back by hand.

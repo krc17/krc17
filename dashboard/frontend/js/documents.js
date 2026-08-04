@@ -20,7 +20,6 @@ export class DocumentPanel {
     this.rotationMs = 25000;
     this.timer = null;
     this.pausedUntil = 0;
-    this.archiveArmed = null; // filename awaiting a confirming second tap
 
     this.#bindControls();
   }
@@ -47,7 +46,7 @@ export class DocumentPanel {
       button.addEventListener('click', () => this.#step(1)),
     );
     document.querySelectorAll(`[data-doc-archive="${this.key}"]`).forEach((button) =>
-      button.addEventListener('click', () => this.#archiveClick(button)),
+      button.addEventListener('click', () => this.#archive()),
     );
     // Any interaction — scrolling to read, a tap — holds the rotation.
     ['pointerdown', 'scroll'].forEach((type) =>
@@ -55,36 +54,10 @@ export class DocumentPanel {
     );
   }
 
-  /**
-   * Archiving removes a document from the wall, so a stray tap shouldn't do it
-   * on its own. The first tap arms the button (and holds the rotation so the
-   * document can't change under it); a second tap within a few seconds moves
-   * the document that was showing when it was armed.
-   */
-  #archiveClick(button) {
-    if (!this.documents.length) return;
-
-    if (this.archiveArmed === null) {
-      this.archiveArmed = this.documents[this.index]?.filename ?? null;
-      if (!this.archiveArmed) return;
-      button.classList.add('is-arming');
-      button.setAttribute('title', 'Tap again to archive');
-      this.#pause();
-      clearTimeout(this.archiveTimer);
-      this.archiveTimer = setTimeout(() => this.#disarmArchive(button), 4000);
-      return;
-    }
-
-    const filename = this.archiveArmed;
-    this.#disarmArchive(button);
-    this.onArchive?.(this.key, filename);
-  }
-
-  #disarmArchive(button) {
-    this.archiveArmed = null;
-    clearTimeout(this.archiveTimer);
-    button.classList.remove('is-arming');
-    button.setAttribute('title', 'Archive');
+  /** Move the document currently showing into its folder's archive/ subfolder. */
+  #archive() {
+    const doc = this.documents[this.index];
+    if (doc) this.onArchive?.(this.key, doc.filename);
   }
 
   #step(delta) {

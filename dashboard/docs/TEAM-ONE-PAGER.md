@@ -16,8 +16,9 @@ Phone, laptop, desk PC — anything with a browser. No login, no shared drive.
 
 It appears on the TV within a second. That is the whole process.
 
-> The address is printed on the dashboard itself, under Team Updates.
-> If it is not showing, the wall is set to local-only — ask Kevin.
+> The address is not shown on the TV (it is a public screen). Keep this page
+> handy, or ask Kevin. If the page will not load, you are on guest wifi — use
+> the office network.
 
 **What works:** Word (`.docx`), PDF, Markdown (`.md`), plain text (`.txt`).
 Up to 25 MB.
@@ -75,6 +76,12 @@ Everything writes straight back to the project file, so the board and the file
 never disagree. If you would rather edit the file directly, it is
 `projects.yaml` in the dashboard's `data\projects` folder and it documents
 itself at the top.
+
+**From your desk (a few of us).** Open `http://PerimeterConf:8770/` on the
+office network and you can drag cards, update progress and reassign coverage
+without walking over to the TV. The first change asks for an **edit key** —
+ask Kevin for it; you only enter it once. Everyone else on the network sees the
+board but cannot change it.
 
 ---
 

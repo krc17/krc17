@@ -95,8 +95,9 @@ Set `DASHBOARD_HOST=0.0.0.0` in `dashboard.env` and restart. Anyone on the
 office network then opens **`http://<tv-pc-name>:8770/drop`** in any browser,
 picks a destination, drags a file in, and it is on the wall within a second.
 
-No file share to map, no login, nothing to install. The dashboard prints this
-address on itself, under Team Updates, so nobody has to be told it twice.
+No file share to map, no login, nothing to install. The address is not shown on
+the wall (deliberately — the TV is a public surface); hand it out internally to
+the people who need it.
 
 Hand out `docs/Team-Dashboard-One-Pager.pdf` -- a single printable page
 covering posting, what reads well on a wall, the project board and the
@@ -108,10 +109,35 @@ Filenames are rebuilt from safe characters, path traversal is refused, and a
 repeat filename is kept alongside the original rather than overwriting it.
 
 **Trust model:** uploads are allowed from the LAN because that is the entire
-point; a posted document is additive and reversible. The endpoints that stop
-the wall or rewrite the project board stay loopback-only, so a browser at
-someone's desk can post files but cannot move cards or shut the display down.
-There is no authentication, so keep this on a trusted network.
+point; a posted document is additive and reversible. Editing the board and
+coverage from the LAN is off by default — a browser at someone's desk is
+read-only — and is enabled only by setting a shared **edit key** (see below).
+The display-control endpoints (minimise / shut down) stay loopback-only no
+matter what, so nobody browsing the wall can turn it off. Keep it all on a
+trusted network.
+
+### Editing the board from a desk (the edit key)
+
+By default only the TV can change the board. To let a few trusted people edit
+from their own machines — drag cards, update progress, reassign coverage,
+archive documents — set a shared key in `dashboard.env`:
+
+```
+DASHBOARD_HOST=0.0.0.0
+EDIT_KEY=choose-a-passphrase
+```
+
+Then on a LAN browser at `http://<tv-pc-name>:8770/`, the first edit prompts for
+the key; it is remembered in that browser and sent as a header on writes. The
+key is compared in constant time and rides in a header (not a cookie), so a
+cross-site page can't ride along on it. Caveats worth knowing:
+
+- It travels over plain HTTP on your LAN, so treat it as a low-stakes shared
+  password, not real authentication — anyone who can sniff the network or is
+  told the key can edit. Fine for a project board on a trusted network.
+- With `EDIT_KEY` unset, the LAN stays read-only (the secure default).
+- Do not print the key in anything you distribute widely; hand it to the few
+  people who need it.
 
 ### Letting the team drop files from their own desks
 
@@ -135,7 +161,8 @@ Set `DASHBOARD_HOST=0.0.0.0` in `dashboard.env`, restart, and open
 board from your desk. Windows Firewall will prompt once — allow it on the
 private network only.
 
-There is no authentication, so keep it on a trusted network.
+Viewing is open to the LAN; editing requires the edit key (above). Keep it on a
+trusted network.
 
 ---
 
@@ -217,9 +244,10 @@ folder; they merge into one board.
 > touch it. To start over from the example, delete your `data\projects\`
 > contents and re-run `Install.bat`.
 
-#### Moving cards on the TV
+#### Moving cards
 
-The board is not read-only. On the display itself:
+The board is not read-only. On the display itself — and, once the edit key is
+set, from a LAN browser too:
 
 | Gesture | What happens |
 |---|---|
@@ -238,8 +266,9 @@ source of truth and the wall never drifts from it. Specifically:
 - **Hand edits win.** If the file changed on disk since the dashboard read it --
   someone saving in Notepad, or a `git pull` -- the write is refused and a
   message appears on screen rather than overwriting their work.
-- **Only the display can write.** The endpoints are refused for any non-loopback
-  client, so a screen watching from someone's desk is read-only.
+- **Writes are gated.** The display always writes; a LAN client is refused
+  unless it carries the shared edit key (see "Editing the board from a desk").
+  With no key set, only the display can write.
 
 Dates are written back in your file's own style -- `due: 2026-08-14`, unquoted,
 not turned into a string.

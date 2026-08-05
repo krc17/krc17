@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hmac
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -121,54 +122,48 @@ LOOPBACK_HOSTS = {"127.0.0.1", "::1", "localhost"}
 
 
 def _is_local(request: Request) -> bool:
-    """Only the screen in front of the TV may change or stop the wall.
-
-    With DASHBOARD_HOST=0.0.0.0 the dashboard is readable from the whole LAN,
-    but nobody at their desk should move cards or shut the display down.
-    """
+    """The screen in front of the TV. Used for display control (shutdown etc.),
+    which must never be reachable from the LAN however editing is configured."""
     client = request.client
     return bool(client and client.host in LOOPBACK_HOSTS)
+
+
+def _can_edit(request: Request) -> bool:
+    """Who may change the board and coverage.
+
+    The display itself always can. A LAN browser may too, but only when an
+    EDIT_KEY is configured and it presents the matching key in the X-Edit-Key
+    header -- so up to a handful of trusted people can edit from their desks
+    while the wall stays read-only to everyone else. With no key set, the LAN
+    is read-only, which is the secure default. The key is compared in constant
+    time; it travels in a header (not a cookie), so a cross-site page cannot
+    ride along on it.
+    """
+    if _is_local(request):
+        return True
+    key = settings.edit_key
+    if not key:
+        return False
+    supplied = request.headers.get("X-Edit-Key", "")
+    return bool(supplied) and hmac.compare_digest(supplied, key)
 
 
 # --------------------------------------------------------------------------- #
 # Content API
 # --------------------------------------------------------------------------- #
 @app.get("/api/config")
-async def get_config() -> dict[str, Any]:
+async def get_config(request: Request) -> dict[str, Any]:
+    local = _is_local(request)
     return {
         "team_name": settings.team_name,
         "timezone": settings.timezone,
         "rotation_seconds": settings.rotation_seconds,
         "calendar_configured": bool(settings.calendar_feeds),
-        "drop_url": _drop_url(),
+        # Editing: the display always edits; a LAN browser needs the edit key
+        # when one is set, and is read-only when none is.
+        "can_edit": local or bool(settings.edit_key),
+        "edit_key_required": (not local) and bool(settings.edit_key),
     }
-
-
-def _drop_url() -> str:
-    """The address the team types to post files, or "" when LAN-invisible.
-
-    Bound to loopback the wall is only reachable from itself, so advertising a
-    link would be a lie. Bound to 0.0.0.0 we look up this machine's own LAN
-    address, because "0.0.0.0" is not something anyone can type.
-    """
-    import socket
-
-    host = settings.host
-    port = settings.port
-    if host not in ("0.0.0.0", "::"):
-        return ""
-
-    try:
-        # Connecting a UDP socket picks the interface that reaches the LAN,
-        # without sending a packet.
-        probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        probe.settimeout(0.2)
-        probe.connect(("192.168.1.1", 9))
-        address = probe.getsockname()[0]
-        probe.close()
-    except OSError:
-        address = socket.gethostname()
-    return f"http://{address}:{port}/drop"
 
 
 @app.get("/api/takeaways")
@@ -189,7 +184,7 @@ async def get_projects() -> dict[str, Any]:
 @app.post("/api/projects/{card_id}/status")
 async def move_card(card_id: str, request: Request, payload: dict[str, Any] = Body(...)) -> JSONResponse:
     """Move a card to another column, writing the change back to the YAML."""
-    if not _is_local(request):
+    if not _can_edit(request):
         return JSONResponse({"ok": False, "detail": "read-only from here"}, status_code=403)
 
     status = str(payload.get("status", "")).strip()
@@ -207,7 +202,7 @@ async def set_progress(
     card_id: str, request: Request, payload: dict[str, Any] = Body(...)
 ) -> JSONResponse:
     """Set progress outright, or nudge it by a delta."""
-    if not _is_local(request):
+    if not _can_edit(request):
         return JSONResponse({"ok": False, "detail": "read-only from here"}, status_code=403)
 
     board = await asyncio.to_thread(projects.load_board, settings.projects_dir)
@@ -238,7 +233,7 @@ async def set_completion(
 ) -> JSONResponse:
     """Set total + complete counts; the board derives the percentage and, at
     100%, moves the card to Done."""
-    if not _is_local(request):
+    if not _can_edit(request):
         return JSONResponse({"ok": False, "detail": "read-only from here"}, status_code=403)
 
     try:
@@ -258,7 +253,7 @@ async def set_completion(
 @app.post("/api/projects/{card_id}/due")
 async def set_due(card_id: str, request: Request, payload: dict[str, Any] = Body(...)) -> JSONResponse:
     """Shift the due date by whole days, or set/clear it explicitly."""
-    if not _is_local(request):
+    if not _can_edit(request):
         return JSONResponse({"ok": False, "detail": "read-only from here"}, status_code=403)
 
     if "days" in payload:
@@ -282,7 +277,7 @@ async def set_due(card_id: str, request: Request, payload: dict[str, Any] = Body
 async def toggle_milestone(
     card_id: str, request: Request, payload: dict[str, Any] = Body(...)
 ) -> JSONResponse:
-    if not _is_local(request):
+    if not _can_edit(request):
         return JSONResponse({"ok": False, "detail": "read-only from here"}, status_code=403)
 
     try:
@@ -311,7 +306,7 @@ async def assign_coverage(
     engineer: str, request: Request, payload: dict[str, Any] = Body(...)
 ) -> JSONResponse:
     """Move an engineer to an area, writing the change back to the YAML."""
-    if not _is_local(request):
+    if not _can_edit(request):
         return JSONResponse({"ok": False, "detail": "read-only from here"}, status_code=403)
 
     area = str(payload.get("area", "")).strip()
@@ -373,7 +368,7 @@ async def archive_document(
     Loopback-only, like the other writes: a browser watching from a desk can
     read the wall but not rearrange it. The move is reversible -- the file is
     still on disk under archive/."""
-    if not _is_local(request):
+    if not _can_edit(request):
         return JSONResponse({"ok": False, "detail": "read-only from here"}, status_code=403)
 
     folders = {"takeaways": settings.takeaways_dir, "updates": settings.updates_dir}
@@ -416,7 +411,7 @@ async def get_now() -> dict[str, Any]:
 
 
 @app.get("/api/state")
-async def get_state() -> dict[str, Any]:
+async def get_state(request: Request) -> dict[str, Any]:
     """One-shot bootstrap so a freshly opened screen paints in a single round trip."""
     takeaways, updates, board, coverage_board = await asyncio.gather(
         asyncio.to_thread(documents.load_folder, settings.takeaways_dir),
@@ -425,7 +420,7 @@ async def get_state() -> dict[str, Any]:
         asyncio.to_thread(coverage.load),
     )
     return {
-        "config": await get_config(),
+        "config": await get_config(request),
         "takeaways": takeaways,
         "updates": updates,
         "projects": board,

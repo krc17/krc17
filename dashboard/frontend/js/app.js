@@ -44,14 +44,19 @@ const panels = {
 
 /** Move the shown document into its folder's archive/ subfolder. */
 async function archiveDoc(channel, filename) {
+  if (!ensureEditKey()) { toast('Archiving needs the edit key.'); return; }
   try {
     const response = await fetch(`/api/${encodeURIComponent(channel)}/archive`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: editHeaders(),
       body: JSON.stringify({ filename }),
     });
     const result = await response.json();
-    toast(result.ok ? `Archived ${filename}` : (result.detail || 'Could not archive that file.'));
+    if (!result.ok && handleEditRejection(response.status)) {
+      // message already shown
+    } else {
+      toast(result.ok ? `Archived ${filename}` : (result.detail || 'Could not archive that file.'));
+    }
   } catch (error) {
     console.warn('archive failed', error);
     toast('Could not archive that file.');
@@ -130,19 +135,56 @@ new CardDrag({
   // No tap action: a coverage card carries only a name, nothing to open.
 });
 
+/* ------------------------------------------------------------------ */
+/* Edit authorization                                                  */
+/* The display itself always edits. A LAN browser needs the shared edit */
+/* key, entered once and kept in this browser, sent as a header.        */
+/* ------------------------------------------------------------------ */
+const EDIT_KEY_STORE = 'dashboard-edit-key';
+let editKeyRequired = false;
+
+function editHeaders() {
+  const headers = { 'Content-Type': 'application/json' };
+  const key = localStorage.getItem(EDIT_KEY_STORE);
+  if (key) headers['X-Edit-Key'] = key;
+  return headers;
+}
+
+/** Ensure a key is on hand when one is required; false if the user dismisses
+ *  the prompt, so the caller can abort the write. */
+function ensureEditKey() {
+  if (!editKeyRequired || localStorage.getItem(EDIT_KEY_STORE)) return true;
+  const key = window.prompt('Enter the edit key to change the board:');
+  if (key && key.trim()) { localStorage.setItem(EDIT_KEY_STORE, key.trim()); return true; }
+  return false;
+}
+
+/** A 403 on a keyed write means the key was wrong — forget it so the next
+ *  attempt prompts again. Returns true when it handled the message. */
+function handleEditRejection(status) {
+  if (status === 403 && editKeyRequired) {
+    localStorage.removeItem(EDIT_KEY_STORE);
+    toast('Edit key rejected — try again.');
+    return true;
+  }
+  return false;
+}
+
+const STALE_BUILD_MSG =
+  'The server is running an older build. Restart it: windows\\Stop-Dashboard.ps1, then Start Dashboard.bat';
+
 async function assignCoverage(engineer, area) {
+  if (!ensureEditKey()) { toast('Editing needs the edit key.'); await refresh('coverage'); return; }
   try {
     const response = await fetch(`/api/coverage/${encodeURIComponent(engineer)}/area`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: editHeaders(),
       body: JSON.stringify({ area }),
     });
     const result = await response.json();
-    if (!result.ok) {
+    if (!result.ok && !handleEditRejection(response.status)) {
       const stale = response.status === 404 || response.status === 405;
-      toast(stale
-        ? 'The server is running an older build. Restart it: windows\\Stop-Dashboard.ps1, then Start Dashboard.bat'
-        : (result.detail || 'Could not save that change.'));
+      toast(stale ? STALE_BUILD_MSG : (result.detail || 'Could not save that change.'));
     }
   } catch (error) {
     console.warn('coverage write failed', error);
@@ -153,52 +195,39 @@ async function assignCoverage(engineer, area) {
 }
 
 async function mutate(path, body) {
-  try {
-    const response = await fetch(path, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const result = await response.json();
-    if (!result.ok) {
-      // 404/405 means this endpoint does not exist on the running server, which
-      // in practice means a new frontend is talking to an older backend left
-      // running from a previous build. Say that, not "Method Not Allowed".
-      const stale = response.status === 404 || response.status === 405;
-      const message = stale
-        ? 'The server is running an older build. Restart it: windows\\Stop-Dashboard.ps1, then Start Dashboard.bat'
-        : result.detail;
-      console.warn('board write refused:', response.status, result.detail);
-      toast(message);
-    }
+  const done = async (ok) => {
     // Repaint either way: on success to pick up derived progress and health,
     // on failure to undo whatever the optimistic move showed.
     await refresh('projects');
     cardDetail.refresh(getCard(body.cardId ?? cardDetail.card?.id));
-    return result.ok;
+    return ok;
+  };
+  if (!ensureEditKey()) { toast('Editing needs the edit key.'); return done(false); }
+  try {
+    const response = await fetch(path, {
+      method: 'POST',
+      headers: editHeaders(),
+      body: JSON.stringify(body),
+    });
+    const result = await response.json();
+    if (!result.ok && !handleEditRejection(response.status)) {
+      // 404/405 means this endpoint does not exist on the running server, which
+      // in practice means a new frontend is talking to an older backend left
+      // running from a previous build. Say that, not "Method Not Allowed".
+      const stale = response.status === 404 || response.status === 405;
+      console.warn('board write refused:', response.status, result.detail);
+      toast(stale ? STALE_BUILD_MSG : result.detail);
+    }
+    return done(result.ok);
   } catch (error) {
     console.warn('board write failed', error);
     toast('Could not save that change.');
-    await refresh('projects');
-    return false;
+    return done(false);
   }
 }
 
 function moveCard(cardId, status) {
   return mutate(`/api/projects/${encodeURIComponent(cardId)}/status`, { status, cardId });
-}
-
-/**
- * Put the posting address on the wall itself. Nobody remembers a URL they were
- * told once in a meeting; the screen they already look at can just show it.
- * Blank when bound to loopback, where no such address exists.
- */
-function showDropUrl(url) {
-  const node = document.getElementById('drop-url');
-  if (!node) return;
-  if (!url) { node.hidden = true; return; }
-  node.textContent = `Add files: ${url.replace(/^https?:\/\//, '')}`;
-  node.hidden = false;
 }
 
 let toastTimer = null;
@@ -251,7 +280,7 @@ async function bootstrap() {
   try {
     const state = await getJSON('/api/state');
     timePanel.configure(state.config, state.now);
-    showDropUrl(state.config.drop_url);
+    editKeyRequired = Boolean(state.config.edit_key_required);
     panels.takeaways.setRotation(state.config.rotation_seconds);
     panels.updates.setRotation(state.config.rotation_seconds);
     panels.takeaways.render(state.takeaways);

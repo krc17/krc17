@@ -92,6 +92,10 @@ class Settings:
     # Seconds each document card is shown before the panel rotates to the next one.
     rotation_seconds: int = 25
 
+    # Shared passphrase that lets a LAN browser edit the board/coverage (the
+    # display itself always can). Empty = LAN stays read-only, the secure default.
+    edit_key: str = ""
+
 
 def load_settings() -> Settings:
     data_dir = _env_path("DASHBOARD_DATA_DIR", Path(__file__).resolve().parent.parent / "data")
@@ -108,6 +112,7 @@ def load_settings() -> Settings:
         news_feeds=_env_list("NEWS_FEEDS", DEFAULT_FEEDS),
         news_refresh_seconds=_env_int("NEWS_REFRESH_SECONDS", 600),
         news_max_items=_env_int("NEWS_MAX_ITEMS", 40),
+        edit_key=os.getenv("EDIT_KEY", "").strip(),
         calendar_feeds=_parse_calendar_feeds("CALENDAR_ICS_URLS"),
         calendar_refresh_seconds=_env_int("CALENDAR_REFRESH_SECONDS", 900),
         calendar_horizon_days=_env_int("CALENDAR_HORIZON_DAYS", 30),

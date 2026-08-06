@@ -1819,6 +1819,21 @@ body.is-card-dragging .pages { overflow-x: hidden; }
 }
 .dropbanner__card.is-in { transform: translateY(0); opacity: 1; }
 
+/* "+N more" backlog badge, peeking at the banner's top-right corner. */
+.dropbanner__more {
+  position: absolute;
+  top: -0.55rem;
+  right: -0.55rem;
+  padding: 0.15rem 0.6rem;
+  font: 700 0.8rem/1.2 "Segoe UI", system-ui, sans-serif;
+  color: #fff;
+  background: #14161a;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
 /* Tap to leave: each skin exits in character (set per theme below). */
 .dropbanner__card.is-out { pointer-events: none; }
 

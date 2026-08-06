@@ -68,7 +68,8 @@ export class DropBanner {
   announce(folderLabel, filename) {
     if (!filename) return;
     this.queue.push({ folder: folderLabel, file: filename });
-    if (!this.current) this.#showNext();
+    if (this.current) this.#renderBadge();   // a drop arrived while one is up
+    else this.#showNext();
   }
 
   #showNext() {
@@ -93,12 +94,22 @@ export class DropBanner {
     this.current = card;
     this.root.hidden = false;
     this.root.replaceChildren(card);
+    this.#renderBadge();
 
     // Two frames so the browser paints the entrance start state before we flip
     // to "in" and the transition actually runs.
     requestAnimationFrame(() => requestAnimationFrame(() => card.classList.add('is-in')));
     // Stays put until a person taps it — every drop is acknowledged by hand.
     card.addEventListener('pointerdown', () => this.#dismiss(card), { once: true });
+  }
+
+  /** Refresh the "+N more" badge to match how many drops are still queued
+   *  behind the banner currently showing. */
+  #renderBadge() {
+    this.root.querySelector('.dropbanner__more')?.remove();
+    if (this.current && this.queue.length) {
+      this.root.append(el('div', 'dropbanner__more', `+${this.queue.length} more`));
+    }
   }
 
   #dismiss(card) {

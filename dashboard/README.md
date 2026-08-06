@@ -194,10 +194,10 @@ Takeaway") and the filename. It stays until someone **taps it** — every drop i
 acknowledged by a person, never dismissed by a timer. Only one shows at a time:
 a burst of drops **queues off-screen**, and each tap plays that badge's exit and
 brings in the next, oldest first, until the wall is caught up on the latest.
-Each drop uses the next of thirteen badges (Pokémon battle box, Street Fighter
+Each drop uses the next of fourteen badges (Pokémon battle box, Street Fighter
 "new challenger", Mario 1-UP, Xbox achievement, cinema marquee, Zelda "item
-get!", Pac-Man, Space Invaders, Game Boy, The Matrix, Tron, Skyrim, and Lord of
-the Rings), and each badge has its own entrance and exit — the Pokémon faints,
+get!", Pac-Man, Space Invaders, Game Boy, The Matrix, Tron, Skyrim, Lord of the
+Rings, and Halo), and each badge has its own entrance and exit — the Pokémon faints,
 the Street Fighter card gets K.O.'d, Mario hops off the bottom, Pac-Man chomps
 its banner away, Tron de-rezzes, the Ring's inscription cools to dark, and so
 on. Adding another is a small, self-contained job: one entry in the `BADGES`

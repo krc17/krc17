@@ -2128,6 +2128,25 @@ body.is-card-dragging .pages { overflow-x: hidden; }
   100% { opacity: 0; filter: brightness(0.2); text-shadow: none; }
 }
 
+/* 14 — Halo: UNSC HUD, navy + teal with a medal-gold header, slipspace exit. */
+.dropbanner--halo {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  color: #bfeef2;
+  background: linear-gradient(#0a1a2b, #06111d);
+  border: 2px solid #47c7d4;
+  border-radius: 3px;
+  box-shadow: 0 0 4px #47c7d4, inset 0 0 16px rgba(71, 199, 212, 0.2);
+}
+.dropbanner--halo .dropbanner__eyebrow { color: #ffcf4d; letter-spacing: 0.2em; }
+.dropbanner--halo .dropbanner__title { color: #eafcff; text-shadow: 0 0 10px rgba(71, 199, 212, 0.6); }
+.dropbanner--halo.is-out { animation: db-out-slipspace 0.5s ease-in forwards; }
+@keyframes db-out-slipspace {
+  0%   { filter: brightness(1); }
+  35%  { transform: scale(1.05); filter: brightness(2.4); }
+  100% { transform: scale(0.6); opacity: 0; filter: blur(4px) brightness(2.4); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dropbanner__card { transition: opacity 0.3s ease !important; transform: none !important; }
   .dropbanner__card.is-out { animation: none !important; opacity: 0; }  /* plain fade */

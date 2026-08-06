@@ -100,6 +100,12 @@ const BADGES = [
     title: (_folder, file) => file,
     sub: (folder) => `One does not simply ignore a ${folder}`,
   },
+  {
+    id: 'halo',
+    eyebrow: () => '◆ CHECKPOINT… DONE',
+    title: (_folder, file) => file,
+    sub: (folder) => `${folder} synced to the UNSC`,
+  },
 ];
 
 export class DropBanner {

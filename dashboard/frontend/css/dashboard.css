@@ -1788,3 +1788,154 @@ body.is-card-dragging .pages { overflow-x: hidden; }
   box-shadow: inset 4px 0 0 var(--cal);
   padding-left: 0.7rem;
 }
+
+/* =========================================================================
+   Drop celebration — one shell, five retro skins (dropbanner.js)
+   Silent, non-interactive, auto-dismiss. All looks are pure CSS: no font
+   files, no images. Each drop advances to the next skin.
+   ========================================================================= */
+.dropbanner {
+  position: fixed;
+  top: calc(var(--gap) + 0.4rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 92;
+  pointer-events: none;              /* it celebrates; it never intercepts taps */
+  width: max-content;
+  max-width: 92vw;
+}
+.dropbanner[hidden] { display: none; }
+
+.dropbanner__card {
+  --enter: translateY(-150%);        /* skins may override the entrance */
+  padding: 0.9rem 1.7rem;
+  text-align: center;
+  transform: var(--enter);
+  opacity: 0;
+  transition: transform 0.5s cubic-bezier(0.2, 0.9, 0.25, 1.25), opacity 0.4s ease;
+}
+.dropbanner__card.is-in { transform: translateY(0); opacity: 1; }
+
+.dropbanner__eyebrow {
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.dropbanner__title {
+  font-size: clamp(1.4rem, 3.2vw, 2.4rem);
+  font-weight: 900;
+  line-height: 1.05;
+  margin: 0.12em 0;
+  overflow-wrap: anywhere;
+}
+.dropbanner__sub { font-size: 1rem; opacity: 0.92; overflow-wrap: anywhere; }
+
+/* 1 — Pokémon battle text box: white panel, heavy border, blinking cursor. */
+.dropbanner--pokemon {
+  font-family: "Courier New", monospace;
+  color: #202020;
+  background: #f8f8f8;
+  border: 4px solid #202020;
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 3px #9aa0a6, 6px 6px 0 rgba(0, 0, 0, 0.35);
+}
+.dropbanner--pokemon .dropbanner__sub::after {
+  content: " ▼";
+  animation: db-blink 1s steps(1) infinite;
+}
+@keyframes db-blink { 50% { opacity: 0; } }
+
+/* 2 — Street Fighter: black/yellow, skewed, red outline, zooms in. */
+.dropbanner--streetfighter {
+  font-style: italic;
+  color: #ffe14d;
+  background: #12060a;
+  border: 3px solid #ffcf1a;
+  border-radius: 6px;
+  box-shadow: 0 0 0 3px #b3000f, 0 14px 40px rgba(0, 0, 0, 0.6);
+  --enter: translateY(0) scale(1.6);
+}
+.dropbanner--streetfighter .dropbanner__eyebrow { color: #ff5252; }
+.dropbanner--streetfighter .dropbanner__title {
+  text-transform: uppercase;
+  text-shadow: 3px 3px 0 #b3000f, -1px -1px 0 #b3000f;
+  transform: skewX(-8deg);
+}
+.dropbanner--streetfighter .dropbanner__sub { color: #ffd98a; font-style: normal; }
+
+/* 3 — Mario 1-UP: sky blue block, gold text with a brick-brown shadow. */
+.dropbanner--mario {
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+  color: #fff;
+  background: linear-gradient(#5c94fc, #4a82e8);
+  border: 4px solid #202020;
+  border-radius: 10px;
+  box-shadow: 0 0 0 3px #fbd000, 6px 6px 0 rgba(0, 0, 0, 0.35);
+}
+.dropbanner--mario .dropbanner__eyebrow { color: #fbd000; text-shadow: 2px 2px 0 #b1440e; }
+.dropbanner--mario .dropbanner__title { text-shadow: 3px 3px 0 #b1440e; }
+
+/* 4 — Xbox achievement: dark pill with a green badge, slides in from the left. */
+.dropbanner--xbox {
+  position: relative;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  color: #eafff0;
+  background: #1b2a20;
+  border-radius: 999px 14px 14px 999px;
+  padding-left: 3.6rem;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.55);
+  --enter: translateX(-120%);
+}
+.dropbanner--xbox::before {
+  content: "🏆";
+  position: absolute;
+  left: 0.55rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: #107c10;
+  display: grid;
+  place-items: center;
+  font-size: 1.2rem;
+}
+.dropbanner--xbox .dropbanner__eyebrow { color: #6ce78f; }
+.dropbanner--xbox .dropbanner__title { font-size: clamp(1.2rem, 2.6vw, 1.7rem); }
+
+/* 5 — Cinema marquee: velvet red, gold serif, chasing bulbs top and bottom. */
+.dropbanner--marquee {
+  position: relative;
+  overflow: hidden;
+  font-family: Georgia, "Times New Roman", serif;
+  color: #ffe9a8;
+  background: #3a0d12;
+  border: 3px solid #d9a441;
+  border-radius: 10px;
+  padding: 1.5rem 2.4rem;
+  box-shadow: 0 0 0 6px #2a090d, 0 14px 40px rgba(0, 0, 0, 0.6);
+}
+.dropbanner--marquee::before,
+.dropbanner--marquee::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background-image: radial-gradient(circle, #ffd460 0 3px, transparent 3.6px);
+  background-size: 16px 8px;
+  animation: db-chase 0.6s linear infinite;
+}
+.dropbanner--marquee::before { top: 4px; }
+.dropbanner--marquee::after { bottom: 4px; animation-direction: reverse; }
+@keyframes db-chase { to { background-position: 16px 0; } }
+.dropbanner--marquee .dropbanner__eyebrow { letter-spacing: 0.3em; }
+.dropbanner--marquee .dropbanner__title { color: #ffd460; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dropbanner__card { transition: opacity 0.3s ease !important; transform: none !important; }
+  .dropbanner--pokemon .dropbanner__sub::after,
+  .dropbanner--marquee::before,
+  .dropbanner--marquee::after { animation: none; }
+}

@@ -188,6 +188,16 @@ seconds (`ROTATION_SECONDS`). Touch a panel to hold it — rotation resumes on i
 own after 90 seconds. The `‹ ›` buttons page manually, and `⤢` blows the panel
 up full-screen for a closer read.
 
+**Drop celebration.** When a genuinely new file lands, a short, silent,
+retro-themed banner slides in for a few seconds — it names the folder ("Team
+Update", "Meeting Takeaway") and the filename, then dismisses itself. Each drop
+uses the next of five skins (Pokémon battle box, Street Fighter "new
+challenger", Mario 1-UP, Xbox achievement, cinema marquee), so the wall cycles
+through them over time. It fires only on new arrivals — the files already there
+when the wall starts don't trigger it — and never on archiving. All of it is
+pure CSS in `frontend/js/dropbanner.js`; there are no sound files, fonts, or
+images to ship.
+
 **Archiving.** The box icon in a panel's header archives the document currently
 showing; a short "Archived …" toast confirms it.
 Archiving moves the file into an `archive\` subfolder of that folder

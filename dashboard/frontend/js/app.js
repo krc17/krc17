@@ -5,6 +5,7 @@
 import { CardDetail } from './carddetail.js';
 import { CardDrag } from './carddrag.js';
 import { DocumentPanel } from './documents.js';
+import { DropBanner } from './dropbanner.js';
 import { Pager } from './pager.js';
 import { renderCoverage } from './coverage.js';
 import { getCard, getColumns, renderBoard } from './projects.js';
@@ -41,6 +42,31 @@ const panels = {
     emptyPath: 'data\\team-updates',
   }),
 };
+
+/* ------------------------------------------------------------------ */
+/* Drop celebration                                                    */
+/* A fresh file gets a short, silent, retro-themed banner. We own the  */
+/* "what's new" decision here: a filename absent a moment ago is a drop.*/
+/* ------------------------------------------------------------------ */
+const dropBanner = new DropBanner(document.getElementById('drop-banner'));
+const DOC_LABEL = { takeaways: 'Meeting Takeaway', updates: 'Team Update' };
+/** Filenames last seen in each document folder, so we can spot arrivals. */
+const knownDocs = { takeaways: new Set(), updates: new Set() };
+
+/** Fetch a document folder, announce anything newly arrived, then render.
+ *  Seeding (bootstrap) skips the announce so the wall doesn't celebrate the
+ *  files that were already there when it started. */
+async function loadDocs(channel, { announce = false } = {}) {
+  const documents = (await getJSON(`/api/${channel}`)).documents || [];
+  const previous = knownDocs[channel];
+  if (announce) {
+    for (const doc of documents) {
+      if (!previous.has(doc.filename)) dropBanner.announce(DOC_LABEL[channel], doc.filename);
+    }
+  }
+  knownDocs[channel] = new Set(documents.map((doc) => doc.filename));
+  panels[channel].render(documents);
+}
 
 /** Move the shown document into its folder's archive/ subfolder. */
 async function archiveDoc(channel, filename) {
@@ -254,8 +280,8 @@ async function getJSON(path) {
 }
 
 const channels = {
-  takeaways: async () => panels.takeaways.render((await getJSON('/api/takeaways')).documents),
-  updates: async () => panels.updates.render((await getJSON('/api/updates')).documents),
+  takeaways: () => loadDocs('takeaways', { announce: true }),
+  updates: () => loadDocs('updates', { announce: true }),
   projects: async () => renderBoard(await getJSON('/api/projects')),
   coverage: async () => renderCoverage(await getJSON('/api/coverage')),
   news: async () => ticker.render(await getJSON('/api/news')),
@@ -285,6 +311,9 @@ async function bootstrap() {
     panels.updates.setRotation(state.config.rotation_seconds);
     panels.takeaways.render(state.takeaways);
     panels.updates.render(state.updates);
+    // Seed "what's already here" so the first live drop is the first banner.
+    knownDocs.takeaways = new Set((state.takeaways || []).map((doc) => doc.filename));
+    knownDocs.updates = new Set((state.updates || []).map((doc) => doc.filename));
     renderBoard(state.projects);
     renderCoverage(state.coverage);
     timePanel.setAgenda(state.agenda);

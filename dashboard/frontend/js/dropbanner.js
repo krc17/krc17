@@ -1,12 +1,12 @@
 /**
  * A silent celebration when a fresh file lands on the wall.
  *
- * One banner shell, a rotating set of retro skins. Each drop advances to the
- * next skin, so over time the wall cycles the whole set. No audio (public TV).
+ * One banner shell, a rotating set of retro badges. Each drop advances to the
+ * next badge, so over time the wall cycles the whole set. No audio (public TV).
  *
  * One banner shows at a time; the rest wait off-screen. A banner never leaves
  * on its own — it stays until someone taps it, so every drop is acknowledged by
- * a person. Tapping plays that skin's exit, then the next queued drop animates
+ * a person. Tapping plays that badge's exit, then the next queued drop animates
  * in; you clear the backlog one tap at a time, oldest first, until you are
  * caught up on the latest.
  *
@@ -17,11 +17,11 @@
 const EXIT_FALLBACK_MS = 900;   // backstop if animationend is missed; > longest exit
 
 /**
- * Five skins. Each fills the same three slots; the CSS class does the styling.
- * The phrasing is part of the theme, so each writes its own — but all of them
+ * The badges. Each fills the same three slots; the CSS class does the styling.
+ * The phrasing is part of the badge, so each writes its own — but all of them
  * carry the folder and the filename, nothing else (no author is tracked).
  */
-const THEMES = [
+const BADGES = [
   {
     id: 'pokemon',
     eyebrow: () => '⚔ WILD ENCOUNTER',
@@ -105,7 +105,7 @@ const THEMES = [
 export class DropBanner {
   constructor(root) {
     this.root = root;                 // the fixed overlay container
-    this.themeIndex = 0;
+    this.badgeIndex = 0;
     this.queue = [];                  // drops waiting off-screen, oldest first
     this.current = null;              // the card on screen, or null
   }
@@ -116,7 +116,7 @@ export class DropBanner {
   announce(folderLabel, filename) {
     if (!filename) return;
     this.queue.push({ folder: folderLabel, file: filename });
-    if (this.current) this.#renderBadge();   // a drop arrived while one is up
+    if (this.current) this.#renderCount();   // a drop arrived while one is up
     else this.#showNext();
   }
 
@@ -129,20 +129,20 @@ export class DropBanner {
       return;
     }
 
-    const theme = THEMES[this.themeIndex];
-    this.themeIndex = (this.themeIndex + 1) % THEMES.length;
+    const badge = BADGES[this.badgeIndex];
+    this.badgeIndex = (this.badgeIndex + 1) % BADGES.length;
 
-    const card = el('div', `dropbanner__card dropbanner--${theme.id}`);
+    const card = el('div', `dropbanner__card dropbanner--${badge.id}`);
     card.append(
-      el('div', 'dropbanner__eyebrow', theme.eyebrow(item.folder, item.file)),
-      el('div', 'dropbanner__title', theme.title(item.folder, item.file)),
-      el('div', 'dropbanner__sub', theme.sub(item.folder, item.file)),
+      el('div', 'dropbanner__eyebrow', badge.eyebrow(item.folder, item.file)),
+      el('div', 'dropbanner__title', badge.title(item.folder, item.file)),
+      el('div', 'dropbanner__sub', badge.sub(item.folder, item.file)),
     );
 
     this.current = card;
     this.root.hidden = false;
     this.root.replaceChildren(card);
-    this.#renderBadge();
+    this.#renderCount();
 
     // Two frames so the browser paints the entrance start state before we flip
     // to "in" and the transition actually runs.
@@ -151,9 +151,9 @@ export class DropBanner {
     card.addEventListener('pointerdown', () => this.#dismiss(card), { once: true });
   }
 
-  /** Refresh the "+N more" badge to match how many drops are still queued
-   *  behind the banner currently showing. */
-  #renderBadge() {
+  /** Refresh the "+N more" counter to match how many drops are still queued
+   *  behind the badge currently showing. */
+  #renderCount() {
     this.root.querySelector('.dropbanner__more')?.remove();
     if (this.current && this.queue.length) {
       this.root.append(el('div', 'dropbanner__more', `+${this.queue.length} more`));
@@ -163,14 +163,14 @@ export class DropBanner {
   #dismiss(card) {
     if (card !== this.current) return;   // ignore a stray tap after it left
     card.classList.remove('is-in');
-    card.classList.add('is-out');        // each skin has its own exit
+    card.classList.add('is-out');        // each badge has its own exit
     let finished = false;
     const advance = () => {
       if (finished) return;              // animationend + timeout must fire once
       finished = true;
       this.#showNext();                  // the next queued drop animates in
     };
-    // Exit durations differ per skin, so end on the animation; a timeout backs
+    // Exit durations differ per badge, so end on the animation; a timeout backs
     // it up in case animationend is missed (e.g. tab hidden mid-fizzle).
     card.addEventListener('animationend', advance, { once: true });
     setTimeout(advance, EXIT_FALLBACK_MS);

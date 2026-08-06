@@ -1790,10 +1790,10 @@ body.is-card-dragging .pages { overflow-x: hidden; }
 }
 
 /* =========================================================================
-   Drop celebration — one shell, a rotating set of retro skins (dropbanner.js)
+   Drop celebration — one shell, a rotating set of retro badges (dropbanner.js)
    Silent. One banner shows at a time; a burst queues off-screen and a tap
-   advances to the next, each skin with its own entrance and exit. All looks
-   are pure CSS: no font files, no images. Each drop advances to the next skin.
+   advances to the next, each badge with its own entrance and exit. All looks
+   are pure CSS: no font files, no images. Each drop advances to the next badge.
    ========================================================================= */
 .dropbanner {
   position: fixed;
@@ -1808,7 +1808,7 @@ body.is-card-dragging .pages { overflow-x: hidden; }
 .dropbanner[hidden] { display: none; }
 
 .dropbanner__card {
-  --enter: translateY(-150%);        /* skins may override the entrance */
+  --enter: translateY(-150%);        /* badges may override the entrance */
   padding: 0.9rem 1.7rem;
   text-align: center;
   transform: var(--enter);
@@ -1834,7 +1834,7 @@ body.is-card-dragging .pages { overflow-x: hidden; }
   pointer-events: none;
 }
 
-/* Tap to leave: each skin exits in character (set per theme below). */
+/* Tap to leave: each badge exits in character (set per badge below). */
 .dropbanner__card.is-out { pointer-events: none; }
 
 /* Pokémon — the fainted-battler slump: sink and grey out. */

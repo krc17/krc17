@@ -9,7 +9,7 @@
  * folder a moment ago) and calls announce(folderLabel, filename).
  */
 
-const HOLD_MS = 6000;   // time on screen once fully in
+const HOLD_MS = 10000;  // time on screen once fully in
 const OUT_MS = 600;     // must cover the longest exit transition in the CSS
 const MAX_QUEUED = 3;   // a night's worth of drops shouldn't parade forever
 

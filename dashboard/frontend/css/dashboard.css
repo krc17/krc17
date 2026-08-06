@@ -1791,8 +1791,9 @@ body.is-card-dragging .pages { overflow-x: hidden; }
 
 /* =========================================================================
    Drop celebration — one shell, five retro skins (dropbanner.js)
-   Silent, non-interactive, auto-dismiss. All looks are pure CSS: no font
-   files, no images. Each drop advances to the next skin.
+   Silent. One banner shows at a time; a burst queues off-screen and a tap
+   advances to the next, each skin with its own entrance and exit. All looks
+   are pure CSS: no font files, no images. Each drop advances to the next skin.
    ========================================================================= */
 .dropbanner {
   position: fixed;
@@ -1800,7 +1801,7 @@ body.is-card-dragging .pages { overflow-x: hidden; }
   left: 50%;
   transform: translateX(-50%);
   z-index: 92;
-  pointer-events: none;              /* it celebrates; it never intercepts taps */
+  pointer-events: none;              /* only the card catches taps, not the gaps */
   width: max-content;
   max-width: 92vw;
 }
@@ -1813,8 +1814,51 @@ body.is-card-dragging .pages { overflow-x: hidden; }
   transform: var(--enter);
   opacity: 0;
   transition: transform 0.5s cubic-bezier(0.2, 0.9, 0.25, 1.25), opacity 0.4s ease;
+  pointer-events: auto;              /* the card itself is tappable to dismiss */
+  cursor: pointer;
 }
 .dropbanner__card.is-in { transform: translateY(0); opacity: 1; }
+
+/* Tap to leave: each skin exits in character (set per theme below). */
+.dropbanner__card.is-out { pointer-events: none; }
+
+/* Pokémon — the fainted-battler slump: sink and grey out. */
+.dropbanner--pokemon.is-out { animation: db-out-faint 0.5s ease-in forwards; }
+@keyframes db-out-faint {
+  40%  { transform: translateY(12%); }
+  100% { transform: translateY(85%) scaleY(0.85); opacity: 0; filter: grayscale(1) brightness(1.4); }
+}
+
+/* Street Fighter — K.O.: punch bigger, then spin off the screen. */
+.dropbanner--streetfighter.is-out { animation: db-out-ko 0.5s cubic-bezier(0.3, 0, 0.7, 1) forwards; }
+@keyframes db-out-ko {
+  25%  { transform: scale(1.18) rotate(-3deg); }
+  100% { transform: scale(0.15) rotate(-22deg) translateY(140%); opacity: 0; }
+}
+
+/* Mario — a little hop, then gravity takes it off the bottom. */
+.dropbanner--mario.is-out { animation: db-out-hop 0.6s cubic-bezier(0.3, -0.4, 0.7, 1) forwards; }
+@keyframes db-out-hop {
+  0%   { transform: translateY(0); }
+  28%  { transform: translateY(-34%); opacity: 1; }
+  100% { transform: translateY(170%); opacity: 0; }
+}
+
+/* Xbox — the notification slides back out the way it came. */
+.dropbanner--xbox.is-out { animation: db-out-slide 0.4s ease-in forwards; }
+@keyframes db-out-slide {
+  100% { transform: translateX(-120%); opacity: 0; }
+}
+
+/* Cinema marquee — the bulbs flicker, then the house lights cut. */
+.dropbanner--marquee.is-out { animation: db-out-lightsout 0.55s ease-in forwards; }
+@keyframes db-out-lightsout {
+  0%   { filter: brightness(1); opacity: 1; }
+  20%  { filter: brightness(1.9); }
+  38%  { filter: brightness(0.35); }
+  58%  { filter: brightness(1.5); }
+  100% { filter: brightness(0); opacity: 0; transform: scale(0.95); }
+}
 
 .dropbanner__eyebrow {
   font-size: 0.82rem;
@@ -1935,6 +1979,7 @@ body.is-card-dragging .pages { overflow-x: hidden; }
 
 @media (prefers-reduced-motion: reduce) {
   .dropbanner__card { transition: opacity 0.3s ease !important; transform: none !important; }
+  .dropbanner__card.is-out { animation: none !important; opacity: 0; }  /* plain fade */
   .dropbanner--pokemon .dropbanner__sub::after,
   .dropbanner--marquee::before,
   .dropbanner--marquee::after { animation: none; }

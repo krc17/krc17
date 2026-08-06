@@ -1,17 +1,20 @@
 /**
- * A short, silent celebration when a fresh file lands on the wall.
+ * A silent celebration when a fresh file lands on the wall.
  *
  * One banner shell, five retro skins. Each drop advances to the next skin, so
- * over a week the wall cycles the whole set. No audio (it is a public TV) and
- * no interaction — it slides in, holds a few seconds, and leaves on its own.
+ * over a week the wall cycles the whole set. No audio (it is a public TV).
+ *
+ * One banner shows at a time; the rest wait off-screen. A banner never leaves
+ * on its own — it stays until someone taps it, so every drop is acknowledged by
+ * a person. Tapping plays that skin's exit, then the next queued drop animates
+ * in; you clear the backlog one tap at a time, oldest first, until you are
+ * caught up on the latest.
  *
  * app.js decides what counts as a "drop" (a filename that was not in the
  * folder a moment ago) and calls announce(folderLabel, filename).
  */
 
-const HOLD_MS = 10000;  // time on screen once fully in
-const OUT_MS = 600;     // must cover the longest exit transition in the CSS
-const MAX_QUEUED = 3;   // a night's worth of drops shouldn't parade forever
+const EXIT_FALLBACK_MS = 900;   // backstop if animationend is missed; > longest exit
 
 /**
  * Five skins. Each fills the same three slots; the CSS class does the styling.
@@ -54,60 +57,64 @@ const THEMES = [
 export class DropBanner {
   constructor(root) {
     this.root = root;                 // the fixed overlay container
-    this.queue = [];
-    this.pumping = false;
     this.themeIndex = 0;
+    this.queue = [];                  // drops waiting off-screen, oldest first
+    this.current = null;              // the card on screen, or null
   }
 
-  /** Queue a celebration. folderLabel is a short, human label (e.g. "Team
-   *  Update"); filename is the file that just landed. */
+  /** Queue a celebration for a freshly-dropped file. folderLabel is a short,
+   *  human label (e.g. "Team Update"); filename is the file that just landed.
+   *  If nothing is showing it appears at once; otherwise it waits its turn. */
   announce(folderLabel, filename) {
     if (!filename) return;
-    if (this.queue.length >= MAX_QUEUED) this.queue.shift();
     this.queue.push({ folder: folderLabel, file: filename });
-    if (!this.pumping) this.#pump();
+    if (!this.current) this.#showNext();
   }
 
-  async #pump() {
-    this.pumping = true;
-    while (this.queue.length) {
-      // eslint-disable-next-line no-await-in-loop -- banners must not overlap
-      await this.#present(this.queue.shift());
+  #showNext() {
+    const item = this.queue.shift();
+    if (!item) {                       // caught up — nothing left to show
+      this.current = null;
+      this.root.replaceChildren();
+      this.root.hidden = true;
+      return;
     }
-    this.pumping = false;
-  }
 
-  #present({ folder, file }) {
     const theme = THEMES[this.themeIndex];
     this.themeIndex = (this.themeIndex + 1) % THEMES.length;
 
     const card = el('div', `dropbanner__card dropbanner--${theme.id}`);
     card.append(
-      el('div', 'dropbanner__eyebrow', theme.eyebrow(folder, file)),
-      el('div', 'dropbanner__title', theme.title(folder, file)),
-      el('div', 'dropbanner__sub', theme.sub(folder, file)),
+      el('div', 'dropbanner__eyebrow', theme.eyebrow(item.folder, item.file)),
+      el('div', 'dropbanner__title', theme.title(item.folder, item.file)),
+      el('div', 'dropbanner__sub', theme.sub(item.folder, item.file)),
     );
 
+    this.current = card;
     this.root.hidden = false;
     this.root.replaceChildren(card);
 
-    return new Promise((resolve) => {
-      // Two frames so the browser paints the "out" start state before we flip
-      // to "in" and the transition actually runs.
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        card.classList.add('is-in');
-        setTimeout(() => {
-          card.classList.remove('is-in');           // play the exit
-          setTimeout(() => {
-            if (this.root.firstChild === card) {
-              this.root.replaceChildren();
-              this.root.hidden = true;
-            }
-            resolve();
-          }, OUT_MS);
-        }, HOLD_MS);
-      }));
-    });
+    // Two frames so the browser paints the entrance start state before we flip
+    // to "in" and the transition actually runs.
+    requestAnimationFrame(() => requestAnimationFrame(() => card.classList.add('is-in')));
+    // Stays put until a person taps it — every drop is acknowledged by hand.
+    card.addEventListener('pointerdown', () => this.#dismiss(card), { once: true });
+  }
+
+  #dismiss(card) {
+    if (card !== this.current) return;   // ignore a stray tap after it left
+    card.classList.remove('is-in');
+    card.classList.add('is-out');        // each skin has its own exit
+    let finished = false;
+    const advance = () => {
+      if (finished) return;              // animationend + timeout must fire once
+      finished = true;
+      this.#showNext();                  // the next queued drop animates in
+    };
+    // Exit durations differ per skin, so end on the animation; a timeout backs
+    // it up in case animationend is missed (e.g. tab hidden mid-fizzle).
+    card.addEventListener('animationend', advance, { once: true });
+    setTimeout(advance, EXIT_FALLBACK_MS);
   }
 }
 

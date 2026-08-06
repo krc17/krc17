@@ -387,6 +387,20 @@ Windows PC on the TV
 The frontend is plain ES modules and CSS — no build step, no npm, nothing to
 compile. Edit a file in `frontend\` and reload the TV.
 
+**Tests.** A fast, offline smoke suite guards the things that would break the
+wall quietly — every API endpoint answers, the edit-key gate holds, an upload
+lands, a board move is written back to the YAML, and every frontend module
+parses. It runs against a throwaway copy of `samples\`, with no network and no
+live server, in about a second:
+
+```
+pip install -r requirements.txt -r requirements-dev.txt
+pytest
+```
+
+In Claude Code on the web these dependencies are installed automatically by the
+`.claude/hooks/session-start.sh` hook, so `pytest` just works in a fresh session.
+
 | Path | What it is |
 |---|---|
 | `backend\app.py` | Routes, SSE fan-out, write endpoints |

@@ -194,10 +194,14 @@ Takeaway") and the filename. It stays until someone **taps it** — every drop i
 acknowledged by a person, never dismissed by a timer. Only one shows at a time:
 a burst of drops **queues off-screen**, and each tap plays that skin's exit and
 brings in the next, oldest first, until the wall is caught up on the latest.
-Each drop uses the next of five skins (Pokémon battle box, Street Fighter "new
-challenger", Mario 1-UP, Xbox achievement, cinema marquee), and each skin has
-its own entrance and exit — the Pokémon faints, the Street Fighter card gets
-K.O.'d, Mario hops off the bottom, and so on. It fires only on new arrivals —
+Each drop uses the next of thirteen skins (Pokémon battle box, Street Fighter
+"new challenger", Mario 1-UP, Xbox achievement, cinema marquee, Zelda "item
+get!", Pac-Man, Space Invaders, Game Boy, The Matrix, Tron, Skyrim, and Lord of
+the Rings), and each skin has its own entrance and exit — the Pokémon faints,
+the Street Fighter card gets K.O.'d, Mario hops off the bottom, Pac-Man chomps
+its banner away, Tron de-rezzes, the Ring's inscription cools to dark, and so
+on. Adding another is a small, self-contained job: one entry in the `THEMES`
+array in `frontend/js/dropbanner.js` plus a matching CSS skin and exit. It fires only on new arrivals —
 the files already there when the wall starts don't trigger it — and never on
 archiving. All of it is pure CSS in `frontend/js/dropbanner.js`; there are no
 sound files, fonts, or images to ship.

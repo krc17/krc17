@@ -1,8 +1,8 @@
 /**
  * A silent celebration when a fresh file lands on the wall.
  *
- * One banner shell, five retro skins. Each drop advances to the next skin, so
- * over a week the wall cycles the whole set. No audio (it is a public TV).
+ * One banner shell, a rotating set of retro skins. Each drop advances to the
+ * next skin, so over time the wall cycles the whole set. No audio (public TV).
  *
  * One banner shows at a time; the rest wait off-screen. A banner never leaves
  * on its own — it stays until someone taps it, so every drop is acknowledged by
@@ -51,6 +51,54 @@ const THEMES = [
     eyebrow: () => '◆ NOW SHOWING ◆',
     title: (_folder, file) => file,
     sub: (folder) => `Fresh ${folder} on the big screen`,
+  },
+  {
+    id: 'zelda',
+    eyebrow: () => '✦ ITEM GET!',
+    title: (folder) => `You got the ${folder}!`,
+    sub: (_folder, file) => file,
+  },
+  {
+    id: 'pacman',
+    eyebrow: () => 'WAKA-WAKA',
+    title: (_folder, file) => file,
+    sub: (folder) => `A fresh ${folder} pellet`,
+  },
+  {
+    id: 'spaceinvaders',
+    eyebrow: () => '▚ INVADER DETECTED',
+    title: (folder) => `${folder} incoming`,
+    sub: (_folder, file) => file,
+  },
+  {
+    id: 'gameboy',
+    eyebrow: () => 'SAVING…',
+    title: (_folder, file) => file,
+    sub: (folder) => `${folder} written to cartridge`,
+  },
+  {
+    id: 'matrix',
+    eyebrow: () => '> WAKE UP…',
+    title: (_folder, file) => file,
+    sub: (folder) => `A ${folder} enters the Matrix`,
+  },
+  {
+    id: 'tron',
+    eyebrow: () => 'ENTERING THE GRID',
+    title: (_folder, file) => file,
+    sub: (folder) => `${folder} — end of line`,
+  },
+  {
+    id: 'skyrim',
+    eyebrow: () => '◆ QUEST UPDATED',
+    title: (_folder, file) => file,
+    sub: (folder) => `${folder} added to your journal`,
+  },
+  {
+    id: 'lotr',
+    eyebrow: () => '❂ THE RING SPEAKS',
+    title: (_folder, file) => file,
+    sub: (folder) => `One does not simply ignore a ${folder}`,
   },
 ];
 

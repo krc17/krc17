@@ -1790,7 +1790,7 @@ body.is-card-dragging .pages { overflow-x: hidden; }
 }
 
 /* =========================================================================
-   Drop celebration — one shell, five retro skins (dropbanner.js)
+   Drop celebration — one shell, a rotating set of retro skins (dropbanner.js)
    Silent. One banner shows at a time; a burst queues off-screen and a tap
    advances to the next, each skin with its own entrance and exit. All looks
    are pure CSS: no font files, no images. Each drop advances to the next skin.
@@ -1991,6 +1991,142 @@ body.is-card-dragging .pages { overflow-x: hidden; }
 @keyframes db-chase { to { background-position: 16px 0; } }
 .dropbanner--marquee .dropbanner__eyebrow { letter-spacing: 0.3em; }
 .dropbanner--marquee .dropbanner__title { color: #ffd460; }
+
+/* 6 — Zelda "item get!": forest green + gold, a glowing treasure. */
+.dropbanner--zelda {
+  font-family: Georgia, "Times New Roman", serif;
+  color: #f6e6b4;
+  background: radial-gradient(circle at 50% 125%, #1f4a3a, #10261e);
+  border: 3px solid #d9b755;
+  border-radius: 8px;
+  box-shadow: 0 0 22px rgba(217, 183, 85, 0.35), 0 14px 40px rgba(0, 0, 0, 0.6);
+}
+.dropbanner--zelda .dropbanner__eyebrow { color: #8fe3b0; letter-spacing: 0.25em; }
+.dropbanner--zelda .dropbanner__title { color: #ffe99a; text-shadow: 0 0 10px rgba(255, 220, 120, 0.7); }
+.dropbanner--zelda.is-out { animation: db-out-twinkle 0.55s ease-out forwards; }
+@keyframes db-out-twinkle {
+  30%  { transform: scale(1.06); filter: brightness(1.8); }
+  100% { transform: scale(1.12); opacity: 0; filter: brightness(2.4); }
+}
+
+/* 7 — Pac-Man: black maze, arcade yellow, chomped away on exit. */
+.dropbanner--pacman {
+  font-family: "Courier New", monospace;
+  color: #ffe100;
+  background: #000;
+  border: 3px solid #ffe100;
+  border-radius: 10px;
+  box-shadow: 0 0 18px rgba(255, 225, 0, 0.35);
+}
+.dropbanner--pacman .dropbanner__title { color: #fff; }
+.dropbanner--pacman.is-out { animation: db-out-chomp 0.5s steps(6) forwards; }
+@keyframes db-out-chomp { to { clip-path: inset(0 100% 0 0); opacity: 0; } }
+
+/* 8 — Space Invaders: phosphor-green monochrome, pixel-zap on exit. */
+.dropbanner--spaceinvaders {
+  font-family: "Courier New", monospace;
+  color: #5bff7a;
+  background: #001b06;
+  border: 3px solid #33ff66;
+  border-radius: 4px;
+  box-shadow: 0 0 16px rgba(51, 255, 102, 0.4);
+  text-shadow: 0 0 6px rgba(51, 255, 102, 0.6);
+}
+.dropbanner--spaceinvaders .dropbanner__title { color: #b6ffc4; }
+.dropbanner--spaceinvaders.is-out { animation: db-out-zap 0.45s steps(5) forwards; }
+@keyframes db-out-zap {
+  20%  { filter: brightness(3); }
+  100% { transform: scaleY(0.02); opacity: 0; }
+}
+
+/* 9 — Game Boy: pea-green LCD, grey bezel, powers off downward. */
+.dropbanner--gameboy {
+  font-family: "Courier New", monospace;
+  color: #0f380f;
+  background: #9bbc0f;
+  border: 6px solid #6b7353;
+  border-radius: 6px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.dropbanner--gameboy .dropbanner__eyebrow { color: #306230; }
+.dropbanner--gameboy .dropbanner__title { color: #0f380f; }
+.dropbanner--gameboy.is-out { animation: db-out-lcdoff 0.5s ease-in forwards; }
+@keyframes db-out-lcdoff {
+  55%  { transform: scaleY(0.04); background: #8aa80c; }
+  100% { transform: scaleY(0.02) scaleX(0.6); opacity: 0; filter: brightness(0.3); }
+}
+
+/* 10 — The Matrix: black, phosphor green, dissolves into the rain. */
+.dropbanner--matrix {
+  font-family: "Courier New", monospace;
+  color: #00ff41;
+  background: #000;
+  border: 1px solid #00ff41;
+  border-radius: 2px;
+  box-shadow: 0 0 18px rgba(0, 255, 65, 0.35);
+  text-shadow: 0 0 8px rgba(0, 255, 65, 0.7);
+}
+.dropbanner--matrix .dropbanner__title { color: #7dffa0; }
+.dropbanner--matrix.is-out { animation: db-out-dissolve 0.55s ease-in forwards; }
+@keyframes db-out-dissolve {
+  100% { opacity: 0; transform: translateY(18%); filter: blur(3px) brightness(1.6); }
+}
+
+/* 11 — Tron: neon cyan on near-black, de-rezzes away. */
+.dropbanner--tron {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #8ff;
+  background: #02060a;
+  border: 2px solid #22e6ff;
+  border-radius: 2px;
+  box-shadow: 0 0 4px #22e6ff, inset 0 0 14px rgba(34, 230, 255, 0.25);
+}
+.dropbanner--tron .dropbanner__title { color: #d6ffff; text-shadow: 0 0 10px #22e6ff; }
+.dropbanner--tron.is-out { animation: db-out-derez 0.5s steps(8) forwards; }
+@keyframes db-out-derez {
+  40%  { transform: translateX(4px) scaleY(0.9); }
+  70%  { transform: translateX(-6px) scaleX(0.6); }
+  100% { transform: scaleX(0.05) scaleY(1.4); opacity: 0; filter: brightness(2); }
+}
+
+/* 12 — Skyrim: carved stone, a shout blasts it off on exit. */
+.dropbanner--skyrim {
+  font-family: Georgia, "Times New Roman", serif;
+  color: #d8c7a0;
+  background: linear-gradient(#20242a, #12151a);
+  border: 3px solid #55606b;
+  border-radius: 6px;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6), 0 14px 40px rgba(0, 0, 0, 0.6);
+}
+.dropbanner--skyrim .dropbanner__eyebrow { color: #9fb2c4; letter-spacing: 0.3em; }
+.dropbanner--skyrim .dropbanner__title { color: #efe4c2; }
+.dropbanner--skyrim.is-out { animation: db-out-shout 0.55s cubic-bezier(0.5, 0, 0.75, 1) forwards; }
+@keyframes db-out-shout {
+  20%  { transform: translateX(-18px); }
+  100% { transform: translateX(140%); opacity: 0; filter: brightness(1.6); }
+}
+
+/* 13 — Lord of the Rings: the Ring inscription, glowing gold, cools to dark. */
+.dropbanner--lotr {
+  font-family: "Palatino Linotype", Palatino, Georgia, serif;
+  font-style: italic;
+  color: #f0c24b;
+  background: #0a0705;
+  border: 2px solid #7a5a1e;
+  border-radius: 8px;
+  box-shadow: 0 0 26px rgba(240, 180, 60, 0.4), inset 0 0 24px rgba(240, 180, 60, 0.15);
+  text-shadow: 0 0 10px rgba(240, 180, 60, 0.7);
+}
+.dropbanner--lotr .dropbanner__eyebrow { color: #e0a94a; letter-spacing: 0.35em; }
+.dropbanner--lotr .dropbanner__title { color: #ffd66b; font-style: normal; }
+.dropbanner--lotr.is-out { animation: db-out-ringcool 0.7s ease-in forwards; }
+@keyframes db-out-ringcool {
+  0%   { filter: brightness(1); }
+  40%  { filter: brightness(1.5); }
+  100% { opacity: 0; filter: brightness(0.2); text-shadow: none; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .dropbanner__card { transition: opacity 0.3s ease !important; transform: none !important; }

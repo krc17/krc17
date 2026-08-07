@@ -364,7 +364,9 @@ list that merges weather alerts with road incidents, worst first.
   (defaults to Charleston, SC / Charleston County). It shows the day's forecast,
   a few upcoming periods, and any active alerts (flood, wind, heat, fog).
 - **Traffic** comes from **TomTom** and needs a free key: sign up at
-  `developer.tomtom.com`, create a key, and put it in `TRAFFIC_API_KEY`. Set
+  `developer.tomtom.com`, create a key, and **entitle it for the Traffic API**
+  (Traffic Incidents) — you do **not** need the Maps / Map Display API, since the
+  page shows a data list, not a rendered map. Put the key in `TRAFFIC_API_KEY`. Set
   `TRAFFIC_BBOX` to the area to watch (`minLon,minLat,maxLon,maxLat`; the default
   covers greater Charleston). It surfaces accidents, jams, lane/road closures and
   flooding, each with the road and the delay. **Leave the key blank and the page

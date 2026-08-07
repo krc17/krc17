@@ -1845,6 +1845,67 @@ body.is-card-dragging .pages { overflow-x: hidden; }
 }
 
 /* =========================================================================
+   CRT channel-change (crt.js) — a full-screen flash over a page swap, so the
+   wall cuts between pages like an old TV changing channels instead of sliding.
+   ========================================================================= */
+.crt-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 90;                       /* over the pages, under banner/toast/sheets */
+  pointer-events: none;
+  opacity: 0;
+  background: #04060a;
+  overflow: hidden;
+}
+/* scanlines + a whiff of static, only lit during the flip */
+.crt-transition::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  background: repeating-linear-gradient(
+    0deg, rgba(0, 0, 0, 0.5) 0 2px, rgba(255, 255, 255, 0.03) 2px 3px);
+  opacity: 0;
+}
+/* the bright horizontal roll bar sweeping down the screen */
+.crt-transition::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -20%;
+  height: 16%;
+  background: linear-gradient(rgba(255, 255, 255, 0), rgba(210, 235, 255, 0.9), rgba(255, 255, 255, 0));
+  opacity: 0;
+}
+.crt-transition.is-playing { animation: crt-flash 0.43s ease forwards; }
+.crt-transition.is-playing::before { animation: crt-static 0.43s steps(8) both; }
+.crt-transition.is-playing::after { animation: crt-roll 0.43s ease-in both; }
+
+@keyframes crt-flash {
+  0%   { opacity: 0; }
+  8%   { opacity: 1; background: #04060a; }
+  15%  { background: #cfe8ff; }      /* cold channel-snap flash */
+  22%  { background: #04060a; }
+  85%  { opacity: 1; }
+  100% { opacity: 0; background: #04060a; }
+}
+@keyframes crt-static {
+  0%, 100% { opacity: 0; }
+  10% { opacity: 0.55; }
+  35% { opacity: 0.25; }
+  60% { opacity: 0.4; }
+  85% { opacity: 0.15; }
+}
+@keyframes crt-roll {
+  0%   { transform: translateY(0);    opacity: 0; }
+  15%  { opacity: 0.9; }
+  100% { transform: translateY(760%); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .crt-transition, .crt-transition.is-playing { animation: none; opacity: 0; }
+}
+
+/* =========================================================================
    Drop celebration — one shell, a rotating set of retro badges (dropbanner.js)
    Silent. One banner shows at a time; a burst queues off-screen and a tap
    advances to the next, each badge with its own entrance and exit. All looks

@@ -32,14 +32,25 @@ export class Pager {
     return PAGE_NAMES[this.index] ?? 'overview';
   }
 
+  /** Register a page-change transition, called as transition(swap) where swap()
+   *  performs the instant jump. Lets a CRT channel-change (or any effect) mask
+   *  the swap. Used by every programmatic change; a live finger-swipe still
+   *  scrolls natively. */
+  setTransition(fn) { this.transition = fn; }
+
   /** Move to a page. `smooth` is off during resize so we don't animate a reflow. */
   goTo(index, { smooth = true } = {}) {
     const target = Math.max(0, Math.min(this.dots.length - 1, index));
-    this.scroller.scrollTo({
-      left: target * this.scroller.clientWidth,
-      behavior: smooth && !prefersReducedMotion() ? 'smooth' : 'auto',
-    });
-    this.#setIndex(target);
+    const jump = (behavior) => {
+      this.scroller.scrollTo({ left: target * this.scroller.clientWidth, behavior });
+      this.#setIndex(target);
+    };
+    const animate = smooth && !prefersReducedMotion();
+    if (animate && this.transition && target !== this.index) {
+      this.transition(() => jump('auto'));   // effect cuts to the new page mid-way
+    } else {
+      jump(animate ? 'smooth' : 'auto');
+    }
   }
 
   next() { this.goTo(this.index + 1); }

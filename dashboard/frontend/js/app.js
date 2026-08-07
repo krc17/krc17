@@ -4,6 +4,7 @@
  */
 import { AutoCycle } from './autocycle.js';
 import { CardDetail } from './carddetail.js';
+import { channelChange } from './crt.js';
 import { CardDrag } from './carddrag.js';
 import { DocumentPanel } from './documents.js';
 import { DropBanner } from './dropbanner.js';
@@ -304,6 +305,7 @@ const pager = new Pager({
   scroller: document.getElementById('pages'),
   dots: document.querySelectorAll('.pager__dot'),
 });
+pager.setTransition(channelChange);   // CRT flip on auto-cycle and button/key paging
 
 // Auto-cycle the pages hands-off; a tap/swipe/keypress pauses it, and it
 // resumes when the wall goes idle. Dwell time comes from config at bootstrap.

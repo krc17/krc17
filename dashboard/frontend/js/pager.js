@@ -20,6 +20,8 @@ export class Pager {
     this.index = 0;
     this.settleTimer = null;
 
+    document.documentElement.dataset.page = this.pageName;   // reflect the start page
+
     this.#bindControls();
     this.#bindScroll();
     this.#bindKeyboard();
@@ -42,6 +44,12 @@ export class Pager {
 
   next() { this.goTo(this.index + 1); }
   previous() { this.goTo(this.index - 1); }
+
+  /** Like next(), but wraps past the last page back to the first. Used by the
+   *  auto-cycle so the wall loops Overview -> Projects -> Coverage -> Overview. */
+  advance() { this.goTo((this.index + 1) % this.dots.length); }
+
+  get pageCount() { return this.dots.length; }
 
   /** Fires with the page name whenever the visible page changes. */
   onChange(handler) {

@@ -158,6 +158,7 @@ async def get_config(request: Request) -> dict[str, Any]:
         "team_name": settings.team_name,
         "timezone": settings.timezone,
         "rotation_seconds": settings.rotation_seconds,
+        "page_cycle_seconds": settings.page_cycle_seconds,
         "calendar_configured": bool(settings.calendar_feeds),
         # Editing: the display always edits; a LAN browser needs the edit key
         # when one is set, and is read-only when none is.

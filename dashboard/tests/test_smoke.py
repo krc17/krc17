@@ -20,6 +20,11 @@ def test_pages_render(client):
     assert client.get("/drop").status_code == 200      # the post-a-file page
 
 
+def test_config_exposes_page_cycle(client):
+    config = client.get("/api/config").json()
+    assert isinstance(config.get("page_cycle_seconds"), int)  # drives auto-cycling
+
+
 def test_edit_gate_and_writeback(client, edit_key):
     """A LAN client (TestClient is non-loopback) is read-only without the key,
     rejected with a wrong key, and with the right key its move persists."""

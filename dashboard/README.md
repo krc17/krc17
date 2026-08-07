@@ -13,6 +13,12 @@ today; drag an engineer between areas with a finger.
 Swipe left and right to move between them, or tap **Overview** / **Projects** /
 **Coverage** in the bottom bar. A scrolling world-news ticker runs across all pages.
 
+Left alone, the wall **cycles the pages by itself** so an unattended TV shows
+everything — an **AUTO** marker sits by the page dots while it does. Touching the
+wall (tap, swipe, or key) pauses the cycle; it resumes once the wall has been
+idle a while. Tune the dwell with `PAGE_CYCLE_SECONDS` (seconds per page; `0`
+turns it off and leaves paging fully manual).
+
 Everything updates by itself. Drop a Word doc in a folder and it is on the wall a
 second later — nobody has to touch the TV.
 

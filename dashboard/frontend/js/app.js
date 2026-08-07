@@ -2,6 +2,7 @@
  * Dashboard bootstrap: fetches state, wires the SSE stream, and keeps every
  * panel in sync. Panels are dumb renderers — this module owns the data flow.
  */
+import { AutoCycle } from './autocycle.js';
 import { CardDetail } from './carddetail.js';
 import { CardDrag } from './carddrag.js';
 import { DocumentPanel } from './documents.js';
@@ -304,6 +305,15 @@ const pager = new Pager({
   dots: document.querySelectorAll('.pager__dot'),
 });
 
+// Auto-cycle the pages hands-off; a tap/swipe/keypress pauses it, and it
+// resumes when the wall goes idle. Dwell time comes from config at bootstrap.
+const pagerAuto = document.getElementById('pager-auto');
+const autoCycle = new AutoCycle({
+  pager,
+  dwellMs: 0,   // filled in from config once we have it
+  onState: (running) => { pagerAuto.hidden = !running; },
+});
+
 /* ------------------------------------------------------------------ */
 /* Fetch helpers                                                       */
 /* ------------------------------------------------------------------ */
@@ -341,6 +351,8 @@ async function bootstrap() {
     const state = await getJSON('/api/state');
     timePanel.configure(state.config, state.now);
     editKeyRequired = Boolean(state.config.edit_key_required);
+    autoCycle.dwellMs = Number(state.config.page_cycle_seconds || 0) * 1000;
+    autoCycle.start();
     panels.takeaways.setRotation(state.config.rotation_seconds);
     panels.updates.setRotation(state.config.rotation_seconds);
     panels.takeaways.render(state.takeaways);

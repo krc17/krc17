@@ -92,6 +92,11 @@ class Settings:
     # Seconds each document card is shown before the panel rotates to the next one.
     rotation_seconds: int = 25
 
+    # Seconds the wall dwells on each page (Overview / Projects / Coverage) before
+    # auto-advancing to the next. Touching the wall pauses it; it resumes when the
+    # wall goes idle again. 0 turns auto-cycling off.
+    page_cycle_seconds: int = 20
+
     # Shared passphrase that lets a LAN browser edit the board/coverage (the
     # display itself always can). Empty = LAN stays read-only, the secure default.
     edit_key: str = ""
@@ -117,6 +122,7 @@ def load_settings() -> Settings:
         calendar_refresh_seconds=_env_int("CALENDAR_REFRESH_SECONDS", 900),
         calendar_horizon_days=_env_int("CALENDAR_HORIZON_DAYS", 30),
         rotation_seconds=_env_int("ROTATION_SECONDS", 25),
+        page_cycle_seconds=_env_int("PAGE_CYCLE_SECONDS", 20),
     )
     for directory in (
         settings.takeaways_dir,

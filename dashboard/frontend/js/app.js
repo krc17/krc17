@@ -152,6 +152,40 @@ document.getElementById('kanban').addEventListener('keydown', (event) => {
   openCard(card.dataset.cardId);
 });
 
+// The "+ New project" tab at the bottom of each column.
+document.getElementById('kanban').addEventListener('click', (event) => {
+  const add = event.target.closest('[data-add-column]');
+  if (add) createProject(add.dataset.addColumn);
+});
+
+/** Create a project in a column: prompt for the identity fields, write it, then
+ *  open the new card so progress, due and milestones can be set right away. */
+async function createProject(status) {
+  if (!ensureEditKey()) { toast('Adding a project needs the edit key.'); return; }
+  const title = (window.prompt('New project — title:') || '').trim();
+  if (!title) return;                                   // cancelled or empty
+  const owner = (window.prompt('Owner (optional):') || '').trim();
+  try {
+    const response = await fetch('/api/projects', {
+      method: 'POST',
+      headers: editHeaders(),
+      body: JSON.stringify({ title, owner, status }),
+    });
+    const result = await response.json();
+    if (!result.ok) {
+      if (handleEditRejection(response.status)) return;
+      const stale = response.status === 404 || response.status === 405;
+      toast(stale ? STALE_BUILD_MSG : (result.detail || 'Could not add that project.'));
+      return;
+    }
+    await refresh('projects');
+    if (result.card_id) openCard(result.card_id);       // straight into the details
+  } catch (error) {
+    console.warn('create project failed', error);
+    toast('Could not add that project.');
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /* Coverage board — same drag engine, no detail sheet (drag only)      */
 /* ------------------------------------------------------------------ */

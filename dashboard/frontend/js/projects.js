@@ -85,7 +85,9 @@ function renderColumns(board) {
   const columns = board.columns ?? [];
   const cards = board.cards ?? [];
 
-  if (!columns.length || !cards.length) {
+  // Render columns whenever any exist, even with no cards — an empty column
+  // still shows its "+ New project" tab so it can be filled from the wall.
+  if (!columns.length) {
     kanban.replaceChildren(emptyBoard());
     return;
   }
@@ -102,16 +104,24 @@ function renderColumns(board) {
 
       const list = element('div', 'column__cards');
       const columnCards = cards.filter((card) => card.column === column.name);
-      if (columnCards.length) {
-        list.append(...columnCards.map((card) => renderCard(card, column.name)));
-      } else {
-        list.append(element('p', 'column__empty', 'Nothing here'));
-      }
+      list.append(...columnCards.map((card) => renderCard(card, column.name)));
+      list.append(addTab(column.name));
 
       node.append(head, list);
       return node;
     }),
   );
+}
+
+/** The "+ New project" tab at the bottom of a column. A tap (wired in app.js)
+ *  prompts for a title and owner and creates a card in this column. */
+function addTab(columnName) {
+  const button = element('button', 'column__add');
+  button.type = 'button';
+  button.dataset.addColumn = columnName;
+  button.setAttribute('aria-label', `Add a project to ${columnName}`);
+  button.append(element('span', 'column__add-icon', '+'), document.createTextNode('New project'));
+  return button;
 }
 
 function renderCard(card, columnName) {

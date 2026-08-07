@@ -181,6 +181,25 @@ async def get_projects() -> dict[str, Any]:
     return await asyncio.to_thread(projects.load_board, settings.projects_dir)
 
 
+@app.post("/api/projects")
+async def create_project(request: Request, payload: dict[str, Any] = Body(...)) -> JSONResponse:
+    """Add a new project to the board. Captures the identity fields (title,
+    owner, the column it lands in); everything else is set by tapping the card."""
+    if not _can_edit(request):
+        return JSONResponse({"ok": False, "detail": "read-only from here"}, status_code=403)
+
+    title = str(payload.get("title", "")).strip()
+    if not title:
+        return JSONResponse({"ok": False, "detail": "title is required"}, status_code=400)
+    status = str(payload.get("status", "")).strip()
+    owner = str(payload.get("owner", "")).strip()
+
+    result = await asyncio.to_thread(board_writer.create, title, status, owner)
+    if result.ok:
+        hub.publish("content", {"channel": "projects"})
+    return JSONResponse(result.as_dict(), status_code=200 if result.ok else 409)
+
+
 @app.post("/api/projects/{card_id}/status")
 async def move_card(card_id: str, request: Request, payload: dict[str, Any] = Body(...)) -> JSONResponse:
     """Move a card to another column, writing the change back to the YAML."""

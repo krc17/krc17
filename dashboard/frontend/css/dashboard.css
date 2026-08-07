@@ -843,11 +843,34 @@ body {
 .column__cards::-webkit-scrollbar { width: 6px; }
 .column__cards::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 3px; }
 
-.column__empty {
-  padding: 0.6rem 0.3rem;
-  font-size: 0.76rem;
-  color: #4b4a47;
+/* "+ New project" tab at the bottom of a column — the add affordance and the
+   empty-column state in one. A dashed ghost so it reads as "add here", not a card. */
+.column__add {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;              /* finger-sized, same floor as every control */
+  padding: 0.5rem;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: 1px dashed var(--hairline);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
 }
+.column__add:hover,
+.column__add:focus-visible {
+  color: var(--ink-2);
+  border-color: var(--muted);
+  background: var(--surface-2);
+}
+.column__add:active { background: var(--surface-3); }
+.column__add-icon { font-size: 1.05rem; font-weight: 700; line-height: 1; }
 
 .card {
   position: relative;

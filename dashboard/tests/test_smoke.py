@@ -44,6 +44,30 @@ def test_edit_gate_and_writeback(client, edit_key):
     assert moved["column"] == target
 
 
+def test_create_project(client, edit_key):
+    """Creating a project is edit-key gated, needs a title, and the new card
+    lands in the chosen column carrying its owner."""
+    # Gated like every other write.
+    assert client.post("/api/projects",
+                       json={"title": "X", "status": "To Do"}).status_code == 403
+    # A blank title is refused.
+    assert client.post("/api/projects", json={"title": "  ", "status": "To Do"},
+                       headers={"X-Edit-Key": edit_key}).status_code == 400
+
+    created = client.post("/api/projects",
+                          json={"title": "Fabrication rig bring-up", "owner": "KC",
+                                "status": "Selected"},
+                          headers={"X-Edit-Key": edit_key})
+    assert created.status_code == 200 and created.json()["ok"], created.text
+    card_id = created.json()["card_id"]
+
+    card = next((c for c in client.get("/api/projects").json()["cards"]
+                 if c["id"] == card_id), None)
+    assert card is not None, "new card not on the board"
+    assert card["column"] == "Selected"
+    assert card["owner"] == "KC"
+
+
 def test_upload_lands_on_the_wall(client):
     response = client.post(
         "/api/upload",

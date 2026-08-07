@@ -269,6 +269,7 @@ set, from a LAN browser too:
 
 | Gesture | What happens |
 |---|---|
+| **Add a project** | Tap **+ New project** at the bottom of any column, type a title (and optional owner) when prompted, and a card is created in that column — it opens straight away so you can set progress, due and milestones. Appended to `projects.yaml` with a title-based id. |
 | **Tap a card** | Opens its detail sheet: full description, every milestone, tags, and buttons to move it to any other column. |
 | **Tick a milestone** | Writes `done: true` back to the YAML. Progress recalculates from the milestone count unless you set `progress:` explicitly. |
 | **Set progress by count** | Tap **Complete** or **Total** and a numpad pops out (a physical keyboard works too); the percentage and "remaining" follow as you enter, and reaching the total moves the card to **Done** on its own. Written back as `total:` / `complete:`. |

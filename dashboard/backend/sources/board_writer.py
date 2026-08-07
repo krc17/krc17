@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from ruamel.yaml import YAML
+from ruamel.yaml.comments import CommentedMap
 
 log = logging.getLogger(__name__)
 
@@ -165,6 +166,103 @@ class BoardWriter:
             return f"milestone {index} -> {done}"
 
         return self._edit(card_id, mutate, "milestone")
+
+    def create(self, title: str, status: str, owner: str = "") -> WriteResult:
+        """Append a new project to the board and return its card id.
+
+        Only the identity fields are captured here (title, owner, and the column
+        it lands in) — everything else is set afterwards by tapping the card, so
+        the file stays minimal and the touch flow stays short. The id mirrors the
+        reader's rule (slug of the title); a trailing number is pinned only when
+        that slug would collide with an existing card."""
+        title = (title or "").strip()
+        if not title:
+            return WriteResult(False, "title is required")
+        status = (status or "").strip() or "To Do"
+        owner = (owner or "").strip()
+
+        with self._lock:
+            try:
+                taken = self._all_identities()
+            except Exception as exc:
+                log.exception("could not read the board")
+                return WriteResult(False, f"could not read the board: {exc.__class__.__name__}")
+
+            base = _identity({"title": title}) or "project"
+            card_id = base
+            suffix = 2
+            while card_id in taken:
+                card_id = f"{base}-{suffix}"
+                suffix += 1
+
+            path = self._primary_file()
+            try:
+                mtime = path.stat().st_mtime if path.exists() else None
+                document = self._yaml.load(path.read_text(encoding="utf-8")) if path.exists() else None
+            except OSError as exc:
+                return WriteResult(False, f"could not read {path.name}: {exc.strerror}")
+            if not isinstance(document, dict):
+                document = CommentedMap()
+
+            projects = document.get("projects")
+            if not isinstance(projects, list):
+                projects = []
+                document["projects"] = projects
+
+            entry = CommentedMap()
+            entry["title"] = title
+            if owner:
+                entry["owner"] = owner
+            entry["status"] = status
+            if card_id != base:              # only pin an id when the slug collides
+                entry["id"] = card_id
+            projects.append(entry)
+
+            # Someone may have hand-edited the file since we read it.
+            if mtime is not None and path.stat().st_mtime != mtime:
+                return WriteResult(False, f"{path.name} changed on disk, refusing to overwrite")
+
+            self._begin_quiet_period()
+            try:
+                self._atomic_dump(path, document)
+            except OSError as exc:
+                log.exception("write failed")
+                return WriteResult(False, f"could not write {path.name}: {exc.strerror}", card_id)
+
+            log.info("created %s in %s", card_id, status)
+            return WriteResult(True, f"created in {status}", card_id)
+
+    def _primary_file(self) -> Path:
+        """Where a new card is written: projects.yaml if present, else the first
+        board file that already holds a projects list, else projects.yaml."""
+        preferred = self._folder / "projects.yaml"
+        if preferred.exists():
+            return preferred
+        for path in sorted(self._folder.glob("*")):
+            if path.suffix.lower() not in _SOURCE_SUFFIXES or path.name.startswith("."):
+                continue
+            try:
+                document = self._yaml.load(path.read_text(encoding="utf-8"))
+            except Exception:
+                continue
+            if isinstance(document, dict) and isinstance(document.get("projects"), list):
+                return path
+        return preferred
+
+    def _all_identities(self) -> set[str]:
+        """Every card id currently on the board, across all files."""
+        ids: set[str] = set()
+        for path in sorted(self._folder.glob("*")):
+            if path.suffix.lower() not in _SOURCE_SUFFIXES or path.name.startswith("."):
+                continue
+            document = self._yaml.load(path.read_text(encoding="utf-8"))
+            if not isinstance(document, dict):
+                continue
+            for key in ("projects", "items", "cards", "tasks"):
+                entries = document.get(key)
+                if isinstance(entries, list):
+                    ids.update(_identity(e) for e in entries if isinstance(e, dict))
+        return ids
 
     # ----------------------------------------------------------------- #
     # Core

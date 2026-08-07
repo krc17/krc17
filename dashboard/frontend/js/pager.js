@@ -11,7 +11,7 @@
  * its header, the dots below, and the arrow keys.
  */
 
-const PAGE_NAMES = ['overview', 'projects', 'coverage'];
+const PAGE_NAMES = ['overview', 'projects', 'coverage', 'travel'];
 
 export class Pager {
   constructor({ scroller, dots }) {

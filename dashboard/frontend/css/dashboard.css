@@ -2270,3 +2270,128 @@ body.is-card-dragging .pages { overflow-x: hidden; }
   .dropbanner--marquee::before,
   .dropbanner--marquee::after { animation: none; }
 }
+
+/* =========================================================================
+   Travel page — weather outlook + merged "affecting your drive" list
+   ========================================================================= */
+.page--travel { display: flex; padding-right: 1px; }
+.page--travel .panel--travel { flex: 1 1 auto; min-width: 0; }
+
+.panel__place { margin-left: auto; color: var(--muted); font-size: 0.82rem; font-weight: 600; }
+
+.travel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: var(--gap);
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.travel__weather, .travel__drive { min-height: 0; display: flex; flex-direction: column; }
+.travel__weather { overflow-y: auto; }
+
+/* --- Weather ------------------------------------------------------------- */
+.weather__hero { display: flex; align-items: center; gap: 1.1rem; margin-bottom: 1rem; }
+.weather__temp {
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.weather__meta { min-width: 0; }
+.weather__now { font-size: 1.15rem; font-weight: 650; color: var(--ink); }
+.weather__stat { margin-top: 0.2rem; color: var(--muted); font-size: 0.92rem; }
+
+.weather__strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  gap: 0.5rem;
+}
+.weather__period {
+  padding: 0.6rem 0.7rem;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+}
+.weather__period-name { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.weather__period-temp { font-size: 1.4rem; font-weight: 750; color: var(--ink); margin: 0.15rem 0; }
+.weather__period-short { font-size: 0.8rem; color: var(--ink-2); }
+.weather__detail { margin-top: 1rem; color: var(--ink-2); font-size: 0.95rem; line-height: 1.5; max-width: 42ch; }
+.weather__empty { color: var(--muted); font-size: 0.95rem; padding: 1rem 0; }
+.weather__stale { margin-top: 0.7rem; color: var(--status-warning); font-size: 0.8rem; }
+
+/* --- Affecting your drive ------------------------------------------------ */
+.travel__drive-title {
+  margin: 0 0 0.6rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  flex: none;
+}
+.travel__drive-list { overflow-y: auto; min-height: 0; }
+.drive-rows { display: flex; flex-direction: column; gap: 0.45rem; }
+.drive-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-left: 3px solid var(--muted);
+  border-radius: var(--radius-sm);
+}
+.drive-row__tag {
+  flex: none;
+  min-width: 6.2rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink-2);
+}
+.drive-row__main { min-width: 0; flex: 1 1 auto; }
+.drive-row__line { font-weight: 650; color: var(--ink); font-size: 0.95rem; }
+.drive-row__detail { color: var(--muted); font-size: 0.82rem; margin-top: 0.1rem; }
+.drive-row__metric { flex: none; font-weight: 750; font-size: 0.9rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+/* Weather alerts: amber, rising to red for severe/extreme. */
+.drive-row--weather { border-left-color: #d9a441; }
+.drive-row--weather .drive-row__tag { color: #e0a94a; }
+.drive-row--weather.is-severe, .drive-row--weather.is-extreme { border-left-color: #d1495b; }
+.drive-row--weather.is-severe .drive-row__tag, .drive-row--weather.is-extreme .drive-row__tag { color: #e06b7b; }
+.drive-row--weather.is-extreme .drive-row__metric { color: #e06b7b; }
+
+/* Traffic by category: accident/closed red, jam orange, works muted. */
+.drive-row.cat-1, .drive-row.cat-8 { border-left-color: #d1495b; }
+.drive-row.cat-1 .drive-row__tag, .drive-row.cat-8 .drive-row__tag { color: #e06b7b; }
+.drive-row.cat-6, .drive-row.cat-7, .drive-row.cat-11 { border-left-color: #e08a3c; }
+.drive-row.cat-6 .drive-row__tag, .drive-row.cat-7 .drive-row__tag, .drive-row.cat-11 .drive-row__tag { color: #e79a52; }
+.drive-row.cat-9, .drive-row.cat-14 { border-left-color: var(--muted); }
+.drive-row__metric { white-space: nowrap; }
+
+.drive-clear {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 2.5rem 1rem;
+  text-align: center;
+}
+.drive-clear__mark {
+  width: 2.6rem; height: 2.6rem;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: rgba(88, 166, 122, 0.16);
+  color: #58a67a;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+.drive-clear__line { color: var(--ink-2); font-size: 0.95rem; }
+
+/* Portrait / narrow: stack weather over the drive list. */
+@media (max-aspect-ratio: 1/1) {
+  .travel { grid-template-columns: minmax(0, 1fr); }
+}

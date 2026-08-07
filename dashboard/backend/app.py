@@ -23,6 +23,8 @@ from .sources.agenda import AgendaService
 from .sources.board_writer import BoardWriter
 from .sources.coverage import CoverageStore
 from .sources.news import NewsService
+from .sources.traffic import TrafficService
+from .sources.weather import WeatherService
 from .watcher import ContentWatcher
 
 logging.basicConfig(
@@ -60,6 +62,8 @@ coverage = CoverageStore(settings.coverage_dir)
 board_writer = BoardWriter(settings.projects_dir)
 news = NewsService(settings.news_feeds, settings.news_max_items)
 agenda = AgendaService(settings.calendar_feeds, settings.timezone, settings.calendar_horizon_days)
+weather = WeatherService(settings.weather_point, settings.weather_place)
+traffic = TrafficService(settings.traffic_api_key, settings.traffic_bbox)
 
 
 # --------------------------------------------------------------------------- #
@@ -90,6 +94,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     tasks = [
         asyncio.create_task(_poll(news.refresh, settings.news_refresh_seconds, "news")),
         asyncio.create_task(_poll(agenda.refresh, settings.calendar_refresh_seconds, "agenda")),
+        asyncio.create_task(_poll(weather.refresh, settings.weather_refresh_seconds, "weather")),
+        asyncio.create_task(_poll(traffic.refresh, settings.traffic_refresh_seconds, "traffic")),
     ]
     log.info("dashboard ready - data dir %s", settings.data_dir)
 
@@ -422,6 +428,16 @@ async def get_agenda() -> dict[str, Any]:
     return agenda.snapshot
 
 
+@app.get("/api/weather")
+async def get_weather() -> dict[str, Any]:
+    return weather.snapshot
+
+
+@app.get("/api/traffic")
+async def get_traffic() -> dict[str, Any]:
+    return traffic.snapshot
+
+
 @app.get("/api/now")
 async def get_now() -> dict[str, Any]:
     """Authoritative clock, so a TV with a drifting RTC still shows the right time."""
@@ -447,6 +463,8 @@ async def get_state(request: Request) -> dict[str, Any]:
         "coverage": coverage_board,
         "news": news.snapshot,
         "agenda": agenda.snapshot,
+        "weather": weather.snapshot,
+        "traffic": traffic.snapshot,
         "now": await get_now(),
     }
 

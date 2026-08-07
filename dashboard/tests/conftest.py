@@ -42,6 +42,8 @@ def client(tmp_path_factory):
     os.environ["EDIT_KEY"] = EDIT_KEY
     os.environ["NEWS_FEEDS"] = ""
     os.environ["CALENDAR_ICS_URLS"] = ""
+    os.environ["WEATHER_POINT"] = ""       # keep weather/traffic off the network
+    os.environ["TRAFFIC_API_KEY"] = ""     # in tests; parsing is covered by units
 
     from fastapi.testclient import TestClient
     import backend.app as appmod

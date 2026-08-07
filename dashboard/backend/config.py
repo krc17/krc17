@@ -92,10 +92,22 @@ class Settings:
     # Seconds each document card is shown before the panel rotates to the next one.
     rotation_seconds: int = 25
 
-    # Seconds the wall dwells on each page (Overview / Projects / Coverage) before
-    # auto-advancing to the next. Touching the wall pauses it; it resumes when the
-    # wall goes idle again. 0 turns auto-cycling off.
+    # Seconds the wall dwells on each page (Overview / Projects / Coverage /
+    # Travel) before auto-advancing to the next. Touching the wall pauses it; it
+    # resumes when the wall goes idle again. 0 turns auto-cycling off.
     page_cycle_seconds: int = 20
+
+    # --- Travel page (weather + traffic) ------------------------------------
+    # Weather is the free, keyless US National Weather Service. Point is
+    # "lat,lon"; place is the label shown on the wall.
+    weather_point: str = "32.7765,-79.9311"      # Charleston, SC
+    weather_place: str = "Charleston County"
+    weather_refresh_seconds: int = 900
+    # Traffic incidents come from TomTom (free tier, needs a key). Empty key =
+    # the Travel page shows weather only. bbox is "minLon,minLat,maxLon,maxLat".
+    traffic_api_key: str = ""
+    traffic_bbox: str = "-80.20,32.65,-79.75,33.03"   # greater Charleston
+    traffic_refresh_seconds: int = 180
 
     # Shared passphrase that lets a LAN browser edit the board/coverage (the
     # display itself always can). Empty = LAN stays read-only, the secure default.
@@ -123,6 +135,12 @@ def load_settings() -> Settings:
         calendar_horizon_days=_env_int("CALENDAR_HORIZON_DAYS", 30),
         rotation_seconds=_env_int("ROTATION_SECONDS", 25),
         page_cycle_seconds=_env_int("PAGE_CYCLE_SECONDS", 20),
+        weather_point=os.getenv("WEATHER_POINT", "32.7765,-79.9311").strip(),
+        weather_place=os.getenv("WEATHER_PLACE", "Charleston County").strip(),
+        weather_refresh_seconds=_env_int("WEATHER_REFRESH_SECONDS", 900),
+        traffic_api_key=os.getenv("TRAFFIC_API_KEY", "").strip(),
+        traffic_bbox=os.getenv("TRAFFIC_BBOX", "-80.20,32.65,-79.75,33.03").strip(),
+        traffic_refresh_seconds=_env_int("TRAFFIC_REFRESH_SECONDS", 180),
     )
     for directory in (
         settings.takeaways_dir,

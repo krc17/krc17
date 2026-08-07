@@ -1,6 +1,6 @@
 # Engineering Team Dashboard
 
-A full-screen wall display for a touchscreen TV, laid out as three swipeable pages.
+A full-screen wall display for a touchscreen TV, laid out as four swipeable pages.
 
 **Page 1 -- Overview:** meeting takeaways and team updates pulled straight out of
 folders, and the date/time with calendar and agenda -- each running the full
@@ -9,9 +9,13 @@ height of the wall.
 dates, health and progress.
 **Page 3 -- Area Coverage:** a full-screen board of who is covering which area
 today; drag an engineer between areas with a finger.
+**Page 4 -- Weather & Travel:** today's outlook for the county plus one merged
+"affecting your drive" list — weather alerts and road incidents (accidents,
+jams, closures) — so engineers can plan the commute and trips to remote sites.
 
 Swipe left and right to move between them, or tap **Overview** / **Projects** /
-**Coverage** in the bottom bar. A scrolling world-news ticker runs across all pages.
+**Coverage** / **Travel** in the bottom bar. A scrolling world-news ticker runs
+across all pages.
 
 Left alone, the wall **cycles the pages by itself** so an unattended TV shows
 everything — an **AUTO** marker sits by the page dots while it does, and each
@@ -37,6 +41,7 @@ second later — nobody has to touch the TV.
 | **Team Updates** | Same, from `data\team-updates`. One file per project or per person works well. |
 | **Project Tracking** | `data\projects\projects.yaml` — a Kanban board with owners, priority, due dates, health and progress. |
 | **Date / time / calendar** | The clock, a month grid, and the next few events from your calendar's ICS link. Use **‹ ›** to change month (**Today** returns), tap ⤢ for a full-screen month, or tap any day for its schedule. |
+| **Weather & Travel** (page 4) | Today's outlook from the National Weather Service (free) plus road incidents from TomTom (free key), merged into one "affecting your drive" list. See [Weather & traffic](#weather--traffic-the-travel-page). |
 | **News ticker** | RSS world-news feeds, refreshed every 10 minutes. |
 
 ---
@@ -346,6 +351,31 @@ so an old schedule reads as old rather than being mistaken for the live one.
 `NEWS_FEEDS` takes any comma-separated list of RSS/Atom URLs. Duplicate wire
 stories are collapsed. If the network drops, the last good pull stays on screen
 and the timestamp on the right turns amber rather than the ticker going blank.
+
+---
+
+### Weather & traffic (the Travel page)
+
+The Travel page shows today's outlook and a single **"affecting your drive"**
+list that merges weather alerts with road incidents, worst first.
+
+- **Weather** is the US **National Weather Service** — free, no key. Set
+  `WEATHER_POINT` to your `lat,lon` and `WEATHER_PLACE` to the label on the wall
+  (defaults to Charleston, SC / Charleston County). It shows the day's forecast,
+  a few upcoming periods, and any active alerts (flood, wind, heat, fog).
+- **Traffic** comes from **TomTom** and needs a free key: sign up at
+  `developer.tomtom.com`, create a key, and put it in `TRAFFIC_API_KEY`. Set
+  `TRAFFIC_BBOX` to the area to watch (`minLon,minLat,maxLon,maxLat`; the default
+  covers greater Charleston). It surfaces accidents, jams, lane/road closures and
+  flooding, each with the road and the delay. **Leave the key blank and the page
+  shows weather only** — no errors, it just says live traffic isn't configured.
+
+Both fail soft like the news ticker: a dropped pull keeps the last good data on
+screen and marks itself stale rather than blanking. Weather refreshes every 15
+minutes, traffic every 3 (`WEATHER_REFRESH_SECONDS` / `TRAFFIC_REFRESH_SECONDS`).
+
+> The wall must be able to reach `api.weather.gov` and `api.tomtom.com` on your
+> network for this page to populate.
 
 ---
 

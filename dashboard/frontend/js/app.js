@@ -14,6 +14,7 @@ import { getCard, getColumns, renderBoard } from './projects.js';
 import { SessionControl } from './session.js';
 import { TimePanel } from './timepanel.js';
 import { Ticker } from './ticker.js';
+import { TravelPage } from './travel.js';
 
 const RECONNECT_BASE_MS = 2000;
 const RECONNECT_MAX_MS = 30000;
@@ -108,6 +109,13 @@ const ticker = new Ticker({
   track: document.getElementById('ticker-track'),
   viewport: document.querySelector('.ticker__viewport'),
   status: document.getElementById('ticker-status'),
+});
+
+const travelPage = new TravelPage({
+  weatherBody: document.getElementById('weather-body'),
+  placeEl: document.getElementById('weather-place'),
+  driveBody: document.getElementById('travel-drive-body'),
+  footEl: document.getElementById('travel-foot'),
 });
 
 new SessionControl({
@@ -332,6 +340,8 @@ const channels = {
   coverage: async () => renderCoverage(await getJSON('/api/coverage')),
   news: async () => ticker.render(await getJSON('/api/news')),
   agenda: async () => timePanel.setAgenda(await getJSON('/api/agenda')),
+  weather: async () => travelPage.setWeather(await getJSON('/api/weather')),
+  traffic: async () => travelPage.setTraffic(await getJSON('/api/traffic')),
 };
 
 async function refresh(channel) {
@@ -366,6 +376,8 @@ async function bootstrap() {
     renderCoverage(state.coverage);
     timePanel.setAgenda(state.agenda);
     ticker.render(state.news);
+    travelPage.setWeather(state.weather);
+    travelPage.setTraffic(state.traffic);
     setLink(true);
   } catch (error) {
     console.error('bootstrap failed', error);

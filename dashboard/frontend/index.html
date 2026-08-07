@@ -109,6 +109,27 @@
           <footer class="panel__foot" id="coverage-foot"></footer>
         </section>
       </section>
+
+      <!-- ══ Page 4 — Weather & travel ═══════════════════════════════ -->
+      <section class="page page--travel" id="page-travel" aria-label="Weather and travel">
+        <section class="panel panel--travel" id="panel-travel" aria-labelledby="travel-title">
+          <header class="panel__head">
+            <button class="tool tool--back" data-goto-page="0" aria-label="Back to overview">
+              <span aria-hidden="true">‹</span> Overview
+            </button>
+            <h2 class="panel__title" id="travel-title">Weather &amp; Travel</h2>
+            <span class="panel__place" id="weather-place"></span>
+          </header>
+          <div class="travel">
+            <div class="travel__weather" id="weather-body"></div>
+            <div class="travel__drive">
+              <h3 class="travel__drive-title">Affecting your drive</h3>
+              <div class="travel__drive-list" id="travel-drive-body"></div>
+            </div>
+          </div>
+          <footer class="panel__foot" id="travel-foot"></footer>
+        </section>
+      </section>
     </div>
 
     <!-- Bottom dock: page switcher, news ticker and the exit control share
@@ -123,6 +144,9 @@
         </button>
         <button class="pager__dot" data-goto-page="2">
           <span class="pager__label">Coverage</span>
+        </button>
+        <button class="pager__dot" data-goto-page="3">
+          <span class="pager__label">Travel</span>
         </button>
         <span class="pager__auto" id="pager-auto" hidden aria-hidden="true">
           <span class="pager__auto-dot"></span>AUTO

@@ -4,6 +4,8 @@ These lock the shapes we depend on from NWS and TomTom so a field rename or a
 null we didn't expect fails here, not silently on the wall."""
 from __future__ import annotations
 
+from backend.config import _parse_routes
+from backend.sources import routing as R
 from backend.sources import traffic as T
 from backend.sources import weather as W
 
@@ -65,3 +67,21 @@ def test_traffic_no_key_is_graceful():
     snapshot = T.TrafficService("", "-80,32,-79,33").snapshot
     assert snapshot["configured"] is False
     assert snapshot["incidents"] == [] and snapshot["count"] == 0
+
+
+def test_parse_routes(monkeypatch):
+    monkeypatch.setenv(
+        "TRAVEL_ROUTES",
+        "HQ to Awendaw = 32.78,-79.93 > 33.03,-79.62; "
+        "junk without arrow = 1,2; "
+        "Downtown = 32.78,-79.93 > 32.80,-79.94",
+    )
+    routes = _parse_routes("TRAVEL_ROUTES")
+    assert [r["name"] for r in routes] == ["HQ to Awendaw", "Downtown"]  # junk dropped
+    assert routes[0]["from"] == "32.78,-79.93" and routes[0]["to"] == "33.03,-79.62"
+
+
+def test_routing_not_configured_without_key_or_routes():
+    # A key but no routes, or routes but no key, both count as not configured.
+    assert R.RoutingService("k", []).snapshot["configured"] is False
+    assert R.RoutingService("", [{"name": "a", "from": "1,2", "to": "3,4"}]).snapshot["configured"] is False

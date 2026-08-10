@@ -356,17 +356,27 @@ and the timestamp on the right turns amber rather than the ticker going blank.
 
 ### Weather & traffic (the Travel page)
 
-The Travel page shows today's outlook and a single **"affecting your drive"**
-list that merges weather alerts with road incidents, worst first.
+The Travel page has three parts: today's **weather outlook** (with a condition
+icon), **live drive times** to the places you go, and an **"affecting your
+drive"** list that merges weather alerts with road incidents, worst first.
 
 - **Weather** is the US **National Weather Service** — free, no key. Set
   `WEATHER_POINT` to your `lat,lon` and `WEATHER_PLACE` to the label on the wall
-  (defaults to Charleston, SC / Charleston County). It shows the day's forecast,
-  a few upcoming periods, and any active alerts (flood, wind, heat, fog).
+  (defaults to Charleston, SC / Charleston County). It shows the day's forecast
+  with an icon, a few upcoming periods, and any active alerts (flood, wind, heat,
+  fog).
+- **Drive times** are the page's headline — for each route you list, the current
+  drive time *with live traffic* plus how many minutes that is over normal
+  (green = on time, amber = slow, red = heavy). Set `TRAVEL_ROUTES` to a
+  semicolon-separated list of `Label = fromLat,fromLon > toLat,toLon` (grab
+  coordinates from Google Maps). This uses the **same TomTom key**, which must
+  also have the **Routing API** entitled (alongside Traffic). Leave it blank for
+  no drive-times panel.
 - **Traffic** comes from **TomTom** and needs a free key: sign up at
-  `developer.tomtom.com`, create a key, and **entitle it for the Traffic API**
-  (Traffic Incidents) — you do **not** need the Maps / Map Display API, since the
-  page shows a data list, not a rendered map. Put the key in `TRAFFIC_API_KEY`. Set
+  `developer.tomtom.com`, create a key, and **entitle it for the Traffic API and
+  the Routing API** (Traffic powers the incident list, Routing powers the drive
+  times above). You do **not** need the Maps / Map Display API — the page shows
+  data, not a rendered map. Put the key in `TRAFFIC_API_KEY`. Set
   `TRAFFIC_BBOX` to the area to watch (`minLon,minLat,maxLon,maxLat`; the default
   covers greater Charleston). It surfaces accidents, jams, lane/road closures and
   flooding, each with the road and the delay. **Leave the key blank and the page

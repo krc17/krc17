@@ -7,15 +7,18 @@
  * follows the weather feed. Both degrade gracefully: no traffic key, a stale
  * pull, or a quiet day all render as calm, readable states rather than blanks.
  */
+import { weatherIcon } from './weathericon.js';
 
 export class TravelPage {
-  constructor({ weatherBody, placeEl, driveBody, footEl }) {
+  constructor({ weatherBody, placeEl, routesBody, driveBody, footEl }) {
     this.weatherBody = weatherBody;
     this.placeEl = placeEl;
+    this.routesBody = routesBody;
     this.driveBody = driveBody;
     this.footEl = footEl;
     this.weather = null;
     this.traffic = null;
+    this.routes = null;
   }
 
   setWeather(data) {
@@ -28,6 +31,11 @@ export class TravelPage {
     this.traffic = data || null;
     this.#renderDrive();
     this.#renderFoot();
+  }
+
+  setRoutes(data) {
+    this.routes = data || null;
+    this.#renderRoutes();
   }
 
   #renderWeather() {
@@ -43,6 +51,7 @@ export class TravelPage {
     const today = w.today;
     const hero = el('div', 'weather__hero');
     hero.append(
+      weatherIcon(today.short, today.isDaytime),
       el('div', 'weather__temp', today.temp == null ? '—' : `${today.temp}°`),
       (() => {
         const meta = el('div', 'weather__meta');
@@ -70,6 +79,42 @@ export class TravelPage {
     if (today.detailed) fragment.append(el('p', 'weather__detail', today.detailed));
     if (w.error) fragment.append(el('p', 'weather__stale', w.error));
     body.replaceChildren(fragment);
+  }
+
+  #renderRoutes() {
+    const data = this.routes;
+    const body = this.routesBody;
+    if (!body) return;
+
+    // No routes configured at all: a quiet hint, not an error.
+    if (!data || !data.routes || !data.routes.length) {
+      const hint = !data || !data.configured
+        ? 'Add TRAVEL_ROUTES to show live drive times to your sites'
+        : 'No drive times available';
+      body.replaceChildren(el('p', 'routes__hint', hint));
+      return;
+    }
+
+    const list = el('div', 'routes');
+    for (const route of data.routes) {
+      const row = el('div', 'route-row');
+      row.append(el('div', 'route-row__name', route.name || 'Route'));
+
+      if (route.error) {
+        row.append(el('div', 'route-row__time route-row__time--muted', '—'));
+        row.classList.add('is-error');
+        list.append(row);
+        continue;
+      }
+
+      const band = delayBand(route.delay_min);
+      row.classList.add(`is-${band}`);
+      const time = el('div', 'route-row__time');
+      time.append(el('span', 'route-row__min', String(route.minutes)), el('span', 'route-row__unit', 'min'));
+      row.append(time, el('div', 'route-row__delay', delayText(route)));
+      list.append(row);
+    }
+    body.replaceChildren(list);
   }
 
   #renderDrive() {
@@ -149,6 +194,18 @@ function statLine(today) {
   if (today.precip != null) bits.push(`${today.precip}% precip`);
   if (today.wind) bits.push(`wind ${today.wind}`);
   return bits.join(' · ');
+}
+
+function delayBand(delayMin) {
+  if (delayMin >= 10) return 'heavy';
+  if (delayMin >= 3) return 'slow';
+  return 'clear';
+}
+
+function delayText(route) {
+  if (route.delay_min >= 3) return `+${route.delay_min} min vs normal`;
+  if (route.delay_min >= 1) return `+${route.delay_min} min`;
+  return 'on time';
 }
 
 function driveMetric(inc) {

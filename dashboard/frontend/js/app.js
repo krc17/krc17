@@ -114,6 +114,7 @@ const ticker = new Ticker({
 const travelPage = new TravelPage({
   weatherBody: document.getElementById('weather-body'),
   placeEl: document.getElementById('weather-place'),
+  routesBody: document.getElementById('travel-routes-body'),
   driveBody: document.getElementById('travel-drive-body'),
   footEl: document.getElementById('travel-foot'),
 });
@@ -342,6 +343,7 @@ const channels = {
   agenda: async () => timePanel.setAgenda(await getJSON('/api/agenda')),
   weather: async () => travelPage.setWeather(await getJSON('/api/weather')),
   traffic: async () => travelPage.setTraffic(await getJSON('/api/traffic')),
+  routes: async () => travelPage.setRoutes(await getJSON('/api/routes')),
 };
 
 async function refresh(channel) {
@@ -378,6 +380,7 @@ async function bootstrap() {
     ticker.render(state.news);
     travelPage.setWeather(state.weather);
     travelPage.setTraffic(state.traffic);
+    travelPage.setRoutes(state.routes);
     setLink(true);
   } catch (error) {
     console.error('bootstrap failed', error);

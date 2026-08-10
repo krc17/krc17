@@ -37,6 +37,29 @@ def _env_list(name: str, default: tuple[str, ...] = ()) -> list[str]:
     return items or list(default)
 
 
+_LATLON = re.compile(r"^-?\d{1,3}(?:\.\d+)?,\s*-?\d{1,3}(?:\.\d+)?$")
+
+
+def _parse_routes(name: str) -> list[dict[str, str]]:
+    """Parse TRAVEL_ROUTES: semicolon-separated `Label = lat,lon > lat,lon`.
+
+    e.g.  HQ -> Awendaw = 32.78,-79.93 > 33.03,-79.62; HQ -> Downtown = ...
+    Malformed entries are skipped rather than failing the whole config.
+    """
+    routes: list[dict[str, str]] = []
+    for chunk in os.getenv(name, "").split(";"):
+        chunk = chunk.strip()
+        if not chunk or "=" not in chunk:
+            continue
+        label, path = chunk.split("=", 1)
+        if ">" not in path:
+            continue
+        origin, destination = (part.strip().replace(" ", "") for part in path.split(">", 1))
+        if _LATLON.match(origin) and _LATLON.match(destination):
+            routes.append({"name": label.strip() or "Route", "from": origin, "to": destination})
+    return routes
+
+
 def _parse_calendar_feeds(name: str) -> list[dict[str, str | None]]:
     """Parse ``CALENDAR_ICS_URLS`` into named, optionally-coloured feeds.
 
@@ -108,6 +131,9 @@ class Settings:
     traffic_api_key: str = ""
     traffic_bbox: str = "-80.20,32.65,-79.75,33.03"   # greater Charleston
     traffic_refresh_seconds: int = 180
+    # Named routes for live drive times, each {name, from "lat,lon", to "lat,lon"}.
+    # Uses the same TomTom key (Routing API). Empty = no drive-times panel.
+    travel_routes: list[dict[str, str]] = field(default_factory=list)
 
     # Shared passphrase that lets a LAN browser edit the board/coverage (the
     # display itself always can). Empty = LAN stays read-only, the secure default.
@@ -141,6 +167,7 @@ def load_settings() -> Settings:
         traffic_api_key=os.getenv("TRAFFIC_API_KEY", "").strip(),
         traffic_bbox=os.getenv("TRAFFIC_BBOX", "-80.20,32.65,-79.75,33.03").strip(),
         traffic_refresh_seconds=_env_int("TRAFFIC_REFRESH_SECONDS", 180),
+        travel_routes=_parse_routes("TRAVEL_ROUTES"),
     )
     for directory in (
         settings.takeaways_dir,

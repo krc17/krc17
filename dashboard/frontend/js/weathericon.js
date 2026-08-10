@@ -70,15 +70,23 @@ function iconKey(short, isDaytime) {
   return 'cloudy';
 }
 
-export function weatherIcon(short, isDaytime) {
-  const markup = ICONS[iconKey(short, isDaytime)] || ICONS.cloudy;
+/** The colour group behind an icon key: drops the -day/-night suffix so the CSS
+ *  can tint by condition (storm amber, rain blue, clear gold, …). */
+function conditionGroup(key) {
+  return key.replace(/-(day|night)$/, '');
+}
+
+export function weatherIcon(short, isDaytime, { size = 'lg' } = {}) {
+  const key = iconKey(short, isDaytime);
+  const markup = ICONS[key] || ICONS.cloudy;
   // Parse through an HTML <template> (not DOMParser/importNode) so the SVG is
   // namespaced and laid out like any inline SVG — the imported-XML path renders
   // but collapses to 0×0 as a flex item. Markup is a constant, not user input.
   const template = document.createElement('template');
   template.innerHTML = markup;
   const node = template.content.firstElementChild.cloneNode(true);
-  node.setAttribute('class', 'weather__icon');
+  // Base sizing class, a size modifier, and a condition class for the colour.
+  node.setAttribute('class', `weather__icon weather__icon--${size} wx-${conditionGroup(key)}`);
   node.setAttribute('aria-hidden', 'true');
   return node;
 }

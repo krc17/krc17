@@ -66,9 +66,14 @@ export class TravelPage {
     const strip = el('div', 'weather__strip');
     for (const period of (w.periods || []).slice(0, 4)) {
       const cell = el('div', 'weather__period');
+      const top = el('div', 'weather__period-top');
+      top.append(
+        weatherIcon(period.short, period.isDaytime, { size: 'sm' }),
+        el('div', 'weather__period-temp', period.temp == null ? '—' : `${period.temp}°`),
+      );
       cell.append(
         el('div', 'weather__period-name', period.name || ''),
-        el('div', 'weather__period-temp', period.temp == null ? '—' : `${period.temp}°`),
+        top,
         el('div', 'weather__period-short', period.short || ''),
       );
       strip.append(cell);

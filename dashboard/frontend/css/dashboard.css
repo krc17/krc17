@@ -2314,7 +2314,7 @@ body.is-card-dragging .pages { overflow-x: hidden; }
   border-radius: var(--radius-sm);
 }
 .weather__period-name { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
-.weather__period-temp { font-size: 1.4rem; font-weight: 750; color: var(--ink); margin: 0.15rem 0; }
+.weather__period-temp { font-size: 1.4rem; font-weight: 750; color: var(--ink); }
 .weather__period-short { font-size: 0.8rem; color: var(--ink-2); }
 .weather__detail { margin-top: 1rem; color: var(--ink-2); font-size: 0.95rem; line-height: 1.5; max-width: 42ch; }
 .weather__empty { color: var(--muted); font-size: 0.95rem; padding: 1rem 0; }
@@ -2397,13 +2397,21 @@ body.is-card-dragging .pages { overflow-x: hidden; }
 }
 
 /* Travel page: weather icon + live drive-times rows (added with routing). */
-.weather__icon {
-  width: 3.6rem;
-  height: 3.6rem;
-  min-width: 3.6rem;              /* a scalable SVG in a flex row must not shrink to 0 */
-  color: #aebccd;
-  flex: 0 0 auto;
-}
+.weather__icon { flex: 0 0 auto; color: #aebccd; }   /* colour set per condition below */
+.weather__icon--lg { width: 3.6rem; height: 3.6rem; min-width: 3.6rem; }
+.weather__icon--sm { width: 1.9rem; height: 1.9rem; min-width: 1.9rem; }
+
+/* Tint each icon by condition, so a storm reads amber at a glance. */
+.wx-clear  { color: #e6b84a; }   /* sun gold */
+.wx-partly { color: #9cc3e6; }   /* soft sky */
+.wx-cloudy { color: #9aa6b2; }   /* grey */
+.wx-rain   { color: #6aa0d8; }   /* blue */
+.wx-storm  { color: #e6a532; }   /* amber — attention */
+.wx-snow   { color: #bfe3ef; }   /* ice */
+.wx-fog    { color: #8b94a0; }   /* muted */
+.wx-wind   { color: #5bb5a8; }   /* teal */
+
+.weather__period-top { display: flex; align-items: center; gap: 0.4rem; margin: 0.2rem 0; }
 
 .travel__drive-title--sub { margin-top: 1.1rem; }
 .travel__routes { flex: none; }

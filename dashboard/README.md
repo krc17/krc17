@@ -382,9 +382,18 @@ drive"** list that merges weather alerts with road incidents, worst first.
   flooding, each with the road and the delay. **Leave the key blank and the page
   shows weather only** — no errors, it just says live traffic isn't configured.
 
-Both fail soft like the news ticker: a dropped pull keeps the last good data on
+- **Sun, moon & tides** fill out the page. Sunrise/sunset (with a daylight arc
+  and a marker for *now*) and the moon phase are computed on the wall from
+  `WEATHER_POINT` — no key, no network. The **tide clock** shows the next
+  high/low tides from NOAA (free, no key); set `TIDE_STATION` to your station
+  (`8665530` is Charleston Harbor — find yours at tidesandcurrents.noaa.gov, or
+  blank it to hide the panel). Tides matter here because street flooding is
+  tidal, so the next high tide pairs with the coastal-flood alerts.
+
+These fail soft like the news ticker: a dropped pull keeps the last good data on
 screen and marks itself stale rather than blanking. Weather refreshes every 15
-minutes, traffic every 3 (`WEATHER_REFRESH_SECONDS` / `TRAFFIC_REFRESH_SECONDS`).
+minutes, traffic and drive times every 3, tides every 30
+(`WEATHER_REFRESH_SECONDS` / `TRAFFIC_REFRESH_SECONDS` / `TIDE_REFRESH_SECONDS`).
 
 > The wall must be able to reach `api.weather.gov` and `api.tomtom.com` on your
 > network for this page to populate.

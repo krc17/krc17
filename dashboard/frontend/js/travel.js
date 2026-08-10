@@ -8,17 +8,40 @@
  * pull, or a quiet day all render as calm, readable states rather than blanks.
  */
 import { weatherIcon } from './weathericon.js';
+import { renderSky } from './skypanel.js';
 
 export class TravelPage {
-  constructor({ weatherBody, placeEl, routesBody, driveBody, footEl }) {
+  constructor({ weatherBody, placeEl, skyBody, routesBody, driveBody, footEl }) {
     this.weatherBody = weatherBody;
     this.placeEl = placeEl;
+    this.skyBody = skyBody;
     this.routesBody = routesBody;
     this.driveBody = driveBody;
     this.footEl = footEl;
     this.weather = null;
     this.traffic = null;
     this.routes = null;
+    this.tides = null;
+    this.point = null;
+  }
+
+  setLocation(point) {
+    this.point = point || null;
+    this.#renderSky();
+  }
+
+  setTides(data) {
+    this.tides = data || null;
+    this.#renderSky();
+  }
+
+  /** Repaint the sun/moon marker (called on a minute tick so "now" stays live). */
+  tickSky() {
+    this.#renderSky();
+  }
+
+  #renderSky() {
+    renderSky(this.skyBody, { point: this.point, tides: this.tides, now: new Date() });
   }
 
   setWeather(data) {

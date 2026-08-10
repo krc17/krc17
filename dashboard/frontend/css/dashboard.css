@@ -2439,3 +2439,27 @@ body.is-card-dragging .pages { overflow-x: hidden; }
 .route-row.is-heavy .route-row__delay { color: #e06b7b; }
 .route-row__time--muted { color: var(--muted); }
 .routes__hint { color: var(--muted); font-size: 0.85rem; padding: 0.4rem 0 0.7rem; }
+
+/* Travel page "sky" fill: daylight arc, moon phase, tides (skypanel.js). */
+.sky-panel {
+  margin-top: 1.3rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--hairline);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.sky__arc { display: block; width: 100%; max-width: 18rem; height: auto; color: #6b7686; }
+.sky__times { display: flex; justify-content: space-between; max-width: 18rem; margin-top: 0.25rem; font-size: 0.8rem; color: var(--muted); }
+.sky__daylight { color: var(--ink-2); }
+.sky__moon { display: flex; align-items: center; gap: 0.65rem; }
+.sky__moon svg { width: 2.4rem; height: 2.4rem; flex: none; }
+.sky__moon-label { font-size: 0.9rem; color: var(--ink-2); }
+.sky__tides-title { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 700; margin-bottom: 0.35rem; }
+.sky__tide { display: flex; align-items: center; gap: 0.7rem; padding: 0.28rem 0; font-size: 0.92rem; }
+.sky__tide-type { min-width: 2.8rem; font-weight: 700; }
+.sky__tide--high .sky__tide-type { color: #6aa0d8; }
+.sky__tide--low .sky__tide-type { color: #8b94a0; }
+.sky__tide-time { color: var(--ink); font-variant-numeric: tabular-nums; }
+.sky__tide-h { color: var(--muted); margin-left: auto; font-variant-numeric: tabular-nums; }
+.sky__tide-empty { color: var(--muted); font-size: 0.85rem; }

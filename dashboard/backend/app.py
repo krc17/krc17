@@ -24,6 +24,7 @@ from .sources.board_writer import BoardWriter
 from .sources.coverage import CoverageStore
 from .sources.news import NewsService
 from .sources.routing import RoutingService
+from .sources.tides import TidesService
 from .sources.traffic import TrafficService
 from .sources.weather import WeatherService
 from .watcher import ContentWatcher
@@ -66,6 +67,7 @@ agenda = AgendaService(settings.calendar_feeds, settings.timezone, settings.cale
 weather = WeatherService(settings.weather_point, settings.weather_place)
 traffic = TrafficService(settings.traffic_api_key, settings.traffic_bbox)
 routing = RoutingService(settings.traffic_api_key, settings.travel_routes)
+tides = TidesService(settings.tide_station)
 
 
 # --------------------------------------------------------------------------- #
@@ -99,6 +101,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         asyncio.create_task(_poll(weather.refresh, settings.weather_refresh_seconds, "weather")),
         asyncio.create_task(_poll(traffic.refresh, settings.traffic_refresh_seconds, "traffic")),
         asyncio.create_task(_poll(routing.refresh, settings.traffic_refresh_seconds, "routes")),
+        asyncio.create_task(_poll(tides.refresh, settings.tide_refresh_seconds, "tides")),
     ]
     log.info("dashboard ready - data dir %s", settings.data_dir)
 
@@ -168,6 +171,7 @@ async def get_config(request: Request) -> dict[str, Any]:
         "timezone": settings.timezone,
         "rotation_seconds": settings.rotation_seconds,
         "page_cycle_seconds": settings.page_cycle_seconds,
+        "weather_point": settings.weather_point,   # lets the wall compute sun/moon locally
         "calendar_configured": bool(settings.calendar_feeds),
         # Editing: the display always edits; a LAN browser needs the edit key
         # when one is set, and is read-only when none is.
@@ -446,6 +450,11 @@ async def get_routes() -> dict[str, Any]:
     return routing.snapshot
 
 
+@app.get("/api/tides")
+async def get_tides() -> dict[str, Any]:
+    return tides.snapshot
+
+
 @app.get("/api/now")
 async def get_now() -> dict[str, Any]:
     """Authoritative clock, so a TV with a drifting RTC still shows the right time."""
@@ -474,6 +483,7 @@ async def get_state(request: Request) -> dict[str, Any]:
         "weather": weather.snapshot,
         "traffic": traffic.snapshot,
         "routes": routing.snapshot,
+        "tides": tides.snapshot,
         "now": await get_now(),
     }
 

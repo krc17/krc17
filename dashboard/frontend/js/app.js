@@ -114,10 +114,13 @@ const ticker = new Ticker({
 const travelPage = new TravelPage({
   weatherBody: document.getElementById('weather-body'),
   placeEl: document.getElementById('weather-place'),
+  skyBody: document.getElementById('travel-sky'),
   routesBody: document.getElementById('travel-routes-body'),
   driveBody: document.getElementById('travel-drive-body'),
   footEl: document.getElementById('travel-foot'),
 });
+// Keep the sun/moon marker current between data pulls.
+setInterval(() => travelPage.tickSky(), 60000);
 
 new SessionControl({
   button: document.getElementById('session-open'),
@@ -344,6 +347,7 @@ const channels = {
   weather: async () => travelPage.setWeather(await getJSON('/api/weather')),
   traffic: async () => travelPage.setTraffic(await getJSON('/api/traffic')),
   routes: async () => travelPage.setRoutes(await getJSON('/api/routes')),
+  tides: async () => travelPage.setTides(await getJSON('/api/tides')),
 };
 
 async function refresh(channel) {
@@ -378,9 +382,11 @@ async function bootstrap() {
     renderCoverage(state.coverage);
     timePanel.setAgenda(state.agenda);
     ticker.render(state.news);
+    travelPage.setLocation(state.config.weather_point);
     travelPage.setWeather(state.weather);
     travelPage.setTraffic(state.traffic);
     travelPage.setRoutes(state.routes);
+    travelPage.setTides(state.tides);
     setLink(true);
   } catch (error) {
     console.error('bootstrap failed', error);

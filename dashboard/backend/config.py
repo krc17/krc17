@@ -134,6 +134,10 @@ class Settings:
     # Named routes for live drive times, each {name, from "lat,lon", to "lat,lon"}.
     # Uses the same TomTom key (Routing API). Empty = no drive-times panel.
     travel_routes: list[dict[str, str]] = field(default_factory=list)
+    # NOAA tide station for the tide clock (free, no key). Charleston Harbor by
+    # default. Blank = no tide panel.
+    tide_station: str = "8665530"
+    tide_refresh_seconds: int = 1800
 
     # Shared passphrase that lets a LAN browser edit the board/coverage (the
     # display itself always can). Empty = LAN stays read-only, the secure default.
@@ -168,6 +172,8 @@ def load_settings() -> Settings:
         traffic_bbox=os.getenv("TRAFFIC_BBOX", "-80.20,32.65,-79.75,33.03").strip(),
         traffic_refresh_seconds=_env_int("TRAFFIC_REFRESH_SECONDS", 180),
         travel_routes=_parse_routes("TRAVEL_ROUTES"),
+        tide_station=os.getenv("TIDE_STATION", "8665530").strip(),
+        tide_refresh_seconds=_env_int("TIDE_REFRESH_SECONDS", 1800),
     )
     for directory in (
         settings.takeaways_dir,

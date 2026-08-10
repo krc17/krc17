@@ -5,7 +5,7 @@ from __future__ import annotations
 READ_ENDPOINTS = [
     "/api/config", "/api/takeaways", "/api/updates", "/api/projects",
     "/api/coverage", "/api/agenda", "/api/news", "/api/weather", "/api/traffic",
-    "/api/routes", "/api/now", "/api/state", "/api/health",
+    "/api/routes", "/api/tides", "/api/now", "/api/state", "/api/health",
 ]
 
 

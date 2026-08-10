@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from backend.config import _parse_routes
 from backend.sources import routing as R
+from backend.sources import tides as TD
 from backend.sources import traffic as T
 from backend.sources import weather as W
 
@@ -85,3 +86,16 @@ def test_routing_not_configured_without_key_or_routes():
     # A key but no routes, or routes but no key, both count as not configured.
     assert R.RoutingService("k", []).snapshot["configured"] is False
     assert R.RoutingService("", [{"name": "a", "from": "1,2", "to": "3,4"}]).snapshot["configured"] is False
+
+
+def test_tide_parse():
+    high = TD._tide({"t": "2026-08-07 13:15", "v": "5.234", "type": "H"})
+    assert high["type"] == "High" and high["height"] == 5.2
+    assert high["time"].startswith("2026-08-07T13:15")
+    low = TD._tide({"t": "2026-08-07 19:40", "v": "0.51", "type": "L"})
+    assert low["type"] == "Low" and low["height"] == 0.5
+    assert TD._tide({"t": "not-a-time"}) is None      # malformed rows are skipped
+
+
+def test_tides_no_station_is_graceful():
+    assert TD.TidesService("").snapshot["configured"] is False

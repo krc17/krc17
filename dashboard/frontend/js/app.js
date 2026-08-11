@@ -325,8 +325,18 @@ const pagerAuto = document.getElementById('pager-auto');
 const autoCycle = new AutoCycle({
   pager,
   dwellMs: 0,   // filled in from config once we have it
-  onState: (running) => { pagerAuto.hidden = !running; },
+  // Don't resume while an editing surface (card/day/session sheet) is open, so
+  // the page never flips out from under someone mid-edit.
+  canResume: () => !document.querySelector('.sheet-backdrop:not([hidden])'),
+  onState: ({ enabled, manualPaused }) => {
+    pagerAuto.hidden = !enabled;
+    pagerAuto.classList.toggle('is-paused', manualPaused);
+    pagerAuto.setAttribute('aria-pressed', String(manualPaused));
+    pagerAuto.setAttribute('aria-label', manualPaused ? 'Resume auto-cycling' : 'Pause auto-cycling');
+    pagerAuto.querySelector('.pager__auto-label').textContent = manualPaused ? 'Paused' : 'Auto';
+  },
 });
+pagerAuto.addEventListener('click', () => autoCycle.toggle());
 
 /* ------------------------------------------------------------------ */
 /* Fetch helpers                                                       */

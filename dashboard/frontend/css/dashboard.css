@@ -1103,8 +1103,8 @@ body {
 
 .pager__dot:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
 
-/* "AUTO" indicator — shows while the wall is cycling on its own, hidden the
-   moment a touch pauses it. The pulsing dot signals "live, hands-off". */
+/* AUTO button — a play/pause toggle for the page cycle. The pulsing dot signals
+   "live, hands-off"; tap it to hold the current page, tap again to resume. */
 .pager__auto {
   display: inline-flex;
   align-items: center;
@@ -1112,14 +1112,20 @@ body {
   margin-left: 0.15rem;
   padding: 0 0.55rem;
   min-height: 2.1rem;
+  font: inherit;
   font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
   user-select: none;
 }
 .pager__auto[hidden] { display: none; }
+.pager__auto:hover { color: var(--ink-2); }
+.pager__auto:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
 .pager__auto-dot {
   width: 7px;
   height: 7px;
@@ -1127,6 +1133,8 @@ body {
   background: var(--series-1);
   animation: pager-auto-pulse 1.6s ease-in-out infinite;
 }
+/* Paused: a still, dimmed dot so "Paused" reads as stopped. */
+.pager__auto.is-paused .pager__auto-dot { animation: none; background: var(--muted); }
 @keyframes pager-auto-pulse {
   0%, 100% { opacity: 0.3; transform: scale(0.85); }
   50%      { opacity: 1;   transform: scale(1.1); }

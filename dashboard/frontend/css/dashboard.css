@@ -1853,64 +1853,128 @@ body.is-card-dragging .pages { overflow-x: hidden; }
 }
 
 /* =========================================================================
-   CRT channel-change (crt.js) — a full-screen flash over a page swap, so the
-   wall cuts between pages like an old TV changing channels instead of sliding.
+   Page transitions (transitions.js) — a rotating set of full-screen effects
+   that mask the page swap at their peak. Pure CSS: an fx--<id> class + keyframes
+   per effect. Clean/cinematic, no "malfunction" looks. The swap is cut mid-
+   effect from JS, so the horizontal slide is never seen.
    ========================================================================= */
-.crt-transition {
+.page-fx {
   position: fixed;
   inset: 0;
   z-index: 90;                       /* over the pages, under banner/toast/sheets */
   pointer-events: none;
   opacity: 0;
-  background: #04060a;
   overflow: hidden;
 }
-/* scanlines + a whiff of static, only lit during the flip */
-.crt-transition::before {
-  content: "";
-  position: absolute;
-  inset: -2px;
-  background: repeating-linear-gradient(
-    0deg, rgba(0, 0, 0, 0.5) 0 2px, rgba(255, 255, 255, 0.03) 2px 3px);
-  opacity: 0;
-}
-/* the bright horizontal roll bar sweeping down the screen */
-.crt-transition::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: -20%;
-  height: 16%;
-  background: linear-gradient(rgba(255, 255, 255, 0), rgba(210, 235, 255, 0.9), rgba(255, 255, 255, 0));
-  opacity: 0;
-}
-.crt-transition.is-playing { animation: crt-flash 0.43s ease forwards; }
-.crt-transition.is-playing::before { animation: crt-static 0.43s steps(8) both; }
-.crt-transition.is-playing::after { animation: crt-roll 0.43s ease-in both; }
+/* A plain opacity envelope shared by effects whose motion lives in ::before. */
+@keyframes fx-fade { 0% { opacity: 0; } 18%, 72% { opacity: 1; } 100% { opacity: 0; } }
 
-@keyframes crt-flash {
-  0%   { opacity: 0; }
-  8%   { opacity: 1; background: #04060a; }
-  15%  { background: #cfe8ff; }      /* cold channel-snap flash */
-  22%  { background: #04060a; }
-  85%  { opacity: 1; }
-  100% { opacity: 0; background: #04060a; }
+/* 1 — Pixel dissolve: chunky 8-bit blocks fade in stepped, then clear. */
+.fx--pixel {
+  background:
+    repeating-linear-gradient(0deg, #0b0f16 0 14px, #0e131c 14px 28px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0 14px, transparent 14px 28px);
+  background-size: 28px 28px;
 }
-@keyframes crt-static {
-  0%, 100% { opacity: 0; }
-  10% { opacity: 0.55; }
-  35% { opacity: 0.25; }
-  60% { opacity: 0.4; }
-  85% { opacity: 0.15; }
+.fx--pixel.is-playing { animation: fx-pixel 0.52s steps(9) forwards; }
+@keyframes fx-pixel { 0% { opacity: 0; } 40%, 60% { opacity: 1; } 100% { opacity: 0; } }
+
+/* 2 — Neon grid (Tron): a glowing cyan perspective grid sweeps through. */
+.fx--grid { background: #02060a; }
+.fx--grid::before {
+  content: "";
+  position: absolute;
+  inset: -10% 0;
+  background:
+    repeating-linear-gradient(0deg, rgba(34, 230, 255, 0.5) 0 1px, transparent 1px 40px),
+    repeating-linear-gradient(90deg, rgba(34, 230, 255, 0.5) 0 1px, transparent 1px 40px);
+  filter: drop-shadow(0 0 4px #22e6ff);
+  transform: perspective(420px) rotateX(62deg);
+  transform-origin: bottom center;
 }
-@keyframes crt-roll {
-  0%   { transform: translateY(0);    opacity: 0; }
-  15%  { opacity: 0.9; }
-  100% { transform: translateY(760%); opacity: 0; }
+.fx--grid.is-playing { animation: fx-fade 0.52s ease forwards; }
+.fx--grid.is-playing::before { animation: fx-grid 0.52s ease forwards; }
+@keyframes fx-grid {
+  0%   { transform: perspective(420px) rotateX(62deg) translateY(55%); opacity: 0; }
+  40%  { opacity: 1; }
+  100% { transform: perspective(420px) rotateX(62deg) translateY(-45%); opacity: 0; }
 }
+
+/* 3 — Star Wars iris: a black iris closes to centre, then opens on the new page. */
+.fx--starwars {
+  background: radial-gradient(circle at 50% 50%, transparent 0 49%, #000 50%);
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.fx--starwars.is-playing { animation: fx-iris 0.56s ease-in-out forwards; }
+@keyframes fx-iris {
+  0%   { opacity: 1; background-size: 320% 320%; }   /* iris open — page shows */
+  45%  { background-size: 5% 5%; }                    /* closed to black (swap) */
+  55%  { background-size: 5% 5%; }
+  100% { opacity: 1; background-size: 320% 320%; }    /* opens on the new page */
+}
+
+/* 4 — Matrix rain: green code columns fall over black, then clear. */
+.fx--matrix { background: #000; }
+.fx--matrix::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: -100%; height: 200%;
+  background: repeating-linear-gradient(90deg, rgba(0, 255, 65, 0.6) 0 2px, transparent 2px 16px);
+  -webkit-mask: repeating-linear-gradient(180deg, #000 0 26px, transparent 26px 120px);
+  mask: repeating-linear-gradient(180deg, #000 0 26px, transparent 26px 120px);
+  filter: drop-shadow(0 0 3px #00ff41);
+}
+.fx--matrix.is-playing { animation: fx-fade 0.6s ease forwards; }
+.fx--matrix.is-playing::before { animation: fx-rain 0.6s linear forwards; }
+@keyframes fx-rain { from { transform: translateY(-42%); } to { transform: translateY(42%); } }
+
+/* 5 — 2001 Star Gate: light spokes warp out from the centre. */
+.fx--stargate { background: #000; }
+.fx--stargate::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: repeating-conic-gradient(from 0deg at 50% 50%, #6ad0ff 0deg 1deg, transparent 1deg 6deg);
+  filter: drop-shadow(0 0 6px #6ad0ff);
+}
+.fx--stargate.is-playing { animation: fx-fade 0.6s ease forwards; }
+.fx--stargate.is-playing::before { animation: fx-warp 0.6s ease-in forwards; }
+@keyframes fx-warp {
+  0%   { transform: scale(0.1); opacity: 0; filter: brightness(2.2); }
+  45%  { opacity: 1; }
+  100% { transform: scale(3.6); opacity: 0; }
+}
+
+/* 6 — Blade Runner: a warm searchlight beam sweeps a dark, rainy-neon tint. */
+.fx--bladerunner.is-playing { animation: fx-br-tint 0.56s ease forwards; }
+@keyframes fx-br-tint {
+  0% { background: rgba(6, 10, 16, 0); }
+  30%, 70% { background: rgba(6, 10, 16, 0.92); }
+  100% { background: rgba(6, 10, 16, 0); }
+}
+.fx--bladerunner::before {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0; width: 55%; left: -55%;
+  background: linear-gradient(100deg, transparent, rgba(255, 196, 120, 0.5) 45%, rgba(255, 150, 90, 0.65) 55%, transparent);
+  filter: blur(6px);
+}
+.fx--bladerunner.is-playing::before { animation: fx-sweep 0.56s ease-in-out forwards; }
+@keyframes fx-sweep { from { left: -55%; } to { left: 120%; } }
+
+/* 7 — Godfather: a slow, warm sepia-black cross-dissolve with a soft vignette. */
+.fx--godfather {
+  background:
+    radial-gradient(circle at 50% 45%, rgba(40, 26, 8, 0), rgba(4, 3, 1, 0.65) 92%),
+    #0a0705;
+}
+.fx--godfather.is-playing { animation: fx-god 0.9s ease-in-out forwards; }
+@keyframes fx-god { 0% { opacity: 0; } 35%, 60% { opacity: 1; } 100% { opacity: 0; } }
+
 @media (prefers-reduced-motion: reduce) {
-  .crt-transition, .crt-transition.is-playing { animation: none; opacity: 0; }
+  .page-fx, .page-fx.is-playing { animation: none !important; opacity: 0 !important; }
+  .page-fx.is-playing::before { animation: none !important; opacity: 0 !important; }
 }
 
 /* =========================================================================

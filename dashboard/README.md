@@ -18,11 +18,14 @@ Swipe left and right to move between them, or tap **Overview** / **Projects** /
 across all pages.
 
 Left alone, the wall **cycles the pages by itself** so an unattended TV shows
-everything — an **AUTO** marker sits by the page dots while it does, and each
-change is a quick **CRT channel-flip** (a tap on Overview/Projects/Coverage or
-the arrow keys gets it too; a live finger-swipe stays a smooth slide). Touching
-the wall (tap, swipe, or key) pauses the cycle; it resumes once the wall has
-been idle a while. Tune the dwell with `PAGE_CYCLE_SECONDS` (seconds per page;
+everything — an **AUTO** button sits by the page dots while it does (tap it to
+hold a page, tap again to resume). Each change plays the next of a **rotating
+set of cinematic transitions** — pixel dissolve, Tron neon grid, Star Wars iris,
+Matrix rain, 2001 warp, Blade Runner sweep, and a slow Godfather dissolve (a tap
+on a page button or the arrow keys gets them too; a live finger-swipe stays a
+smooth slide). Touching the wall (tap, swipe, or key) pauses the cycle, and it
+holds while a card sheet is open so the page never flips mid-edit; it resumes
+once the wall is idle. Tune the dwell with `PAGE_CYCLE_SECONDS` (seconds per page;
 `0` turns it off and leaves paging fully manual).
 
 Everything updates by itself. Drop a Word doc in a folder and it is on the wall a

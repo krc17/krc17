@@ -33,8 +33,8 @@ export class Pager {
   }
 
   /** Register a page-change transition, called as transition(swap) where swap()
-   *  performs the instant jump. Lets a CRT channel-change (or any effect) mask
-   *  the swap. Used by every programmatic change; a live finger-swipe still
+   *  performs the instant jump. Lets a transition effect mask the swap. Used by
+   *  every programmatic change; a live finger-swipe still
    *  scrolls natively. */
   setTransition(fn) { this.transition = fn; }
 

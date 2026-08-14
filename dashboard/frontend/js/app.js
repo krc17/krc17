@@ -202,12 +202,17 @@ async function createProject(status) {
 
 /* ------------------------------------------------------------------ */
 /* Coverage board — same drag engine, no detail sheet (drag only)      */
+/* Retired from the wall: everything below is guarded on the board's    */
+/* presence, so restoring the page HTML revives it with no JS changes.  */
 /* ------------------------------------------------------------------ */
-new CardDrag({
-  root: document.getElementById('coverage-board'),
-  onMove: (engineer, area) => assignCoverage(engineer, area),
-  // No tap action: a coverage card carries only a name, nothing to open.
-});
+const coverageBoard = document.getElementById('coverage-board');
+if (coverageBoard) {
+  new CardDrag({
+    root: coverageBoard,
+    onMove: (engineer, area) => assignCoverage(engineer, area),
+    // No tap action: a coverage card carries only a name, nothing to open.
+  });
+}
 
 /* ------------------------------------------------------------------ */
 /* Edit authorization                                                  */
@@ -351,7 +356,8 @@ const channels = {
   takeaways: () => loadDocs('takeaways', { announce: true }),
   updates: () => loadDocs('updates', { announce: true }),
   projects: async () => renderBoard(await getJSON('/api/projects')),
-  coverage: async () => renderCoverage(await getJSON('/api/coverage')),
+  // Coverage is retired; only wire its channel when its board is on the page.
+  ...(coverageBoard ? { coverage: async () => renderCoverage(await getJSON('/api/coverage')) } : {}),
   news: async () => ticker.render(await getJSON('/api/news')),
   agenda: async () => timePanel.setAgenda(await getJSON('/api/agenda')),
   weather: async () => travelPage.setWeather(await getJSON('/api/weather')),
@@ -389,7 +395,7 @@ async function bootstrap() {
     knownDocs.takeaways = new Set((state.takeaways || []).map((doc) => doc.filename));
     knownDocs.updates = new Set((state.updates || []).map((doc) => doc.filename));
     renderBoard(state.projects);
-    renderCoverage(state.coverage);
+    if (coverageBoard) renderCoverage(state.coverage);
     timePanel.setAgenda(state.agenda);
     ticker.render(state.news);
     travelPage.setLocation(state.config.weather_point);

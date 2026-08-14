@@ -1,21 +1,22 @@
 # Engineering Team Dashboard
 
-A full-screen wall display for a touchscreen TV, laid out as four swipeable pages.
+A full-screen wall display for a touchscreen TV, laid out as three swipeable pages.
 
 **Page 1 -- Overview:** meeting takeaways and team updates pulled straight out of
 folders, and the date/time with calendar and agenda -- each running the full
 height of the wall.
 **Page 2 -- Projects:** a full-screen Kanban board with owners, priority, due
 dates, health and progress.
-**Page 3 -- Area Coverage:** a full-screen board of who is covering which area
-today; drag an engineer between areas with a finger.
-**Page 4 -- Weather & Travel:** today's outlook for the county plus one merged
+**Page 3 -- Weather & Travel:** today's outlook for the county plus one merged
 "affecting your drive" list — weather alerts and road incidents (accidents,
 jams, closures) — so engineers can plan the commute and trips to remote sites.
 
 Swipe left and right to move between them, or tap **Overview** / **Projects** /
-**Coverage** / **Travel** in the bottom bar. A scrolling world-news ticker runs
-across all pages.
+**Travel** in the bottom bar. A scrolling world-news ticker runs across all pages.
+
+> An **Area Coverage** board (drag engineers between areas) was retired from the
+> wall. Its code, data (`data\coverage`), and API stay in place — restore the
+> page section and its pager dot in `frontend\index.html` to bring it back.
 
 Left alone, the wall **cycles the pages by itself** so an unattended TV shows
 everything — an **AUTO** button sits by the page dots while it does (tap it to
@@ -39,7 +40,6 @@ second later — nobody has to touch the TV.
 
 | Section | Where its content comes from |
 |---|---|
-| **Area Coverage** (page 3) | `data\coverage\coverage.yaml` — engineer cards you drag between area columns. Saved to disk and mirrored to any other screen showing the dashboard. |
 | **Team Meeting Takeaways** | Every `.docx` / `.pdf` / `.md` / `.txt` in `data\meeting-takeaways`. Newest first, auto-rotating. |
 | **Team Updates** | Same, from `data\team-updates`. One file per project or per person works well. |
 | **Project Tracking** | `data\projects\projects.yaml` — a Kanban board with owners, priority, due dates, health and progress. |
@@ -95,7 +95,7 @@ note says a new dependency was added.
 | Action | How |
 |---|---|
 | Start it | `Start Dashboard.bat`, or the *Team Dashboard* desktop shortcut |
-| Change page | Swipe left/right, tap **Overview** / **Projects** / **Coverage**, or press `←` `→` (or `1` / `2` / `3`) |
+| Change page | Swipe left/right, tap **Overview** / **Projects** / **Travel**, or press `←` `→` (or `1` / `2` / `3`) |
 | Minimise, close, or shut down | Tap the **power icon** at the right of the bottom bar |
 | Leave kiosk mode by keyboard | `Ctrl+W` or `Alt+F4` on the TV |
 | Stop the server from a terminal | `windows\Stop-Dashboard.ps1` |
@@ -403,9 +403,15 @@ minutes, traffic and drive times every 3, tides every 30
 
 ---
 
-## Area coverage
+## Area coverage (retired)
 
-Page 3 is the daily coverage board: each engineer is a card, each area is a
+> This board was retired from the wall. The backend, `data\coverage\coverage.yaml`,
+> `/api/coverage`, and `frontend\js\coverage.js` all remain; to bring it back,
+> restore the `#page-coverage` section and its **Coverage** pager dot in
+> `frontend\index.html` (the JS wiring re-enables itself when the board is
+> present). The rest of this section describes it for when it's revived.
+
+The daily coverage board: each engineer is a card, each area is a
 column. Drag a card to the area that person is covering today and the change
 saves itself; any other screen showing the dashboard updates within a second.
 

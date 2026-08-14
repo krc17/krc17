@@ -1914,20 +1914,38 @@ body.is-card-dragging .pages { overflow-x: hidden; }
   100% { opacity: 1; background-size: 320% 320%; }    /* opens on the new page */
 }
 
-/* 4 — Matrix rain: green code columns fall over black, then clear. */
+/* 4 — Matrix rain: green trails fall in vertical columns over black.
+   Each layer is a column of repeating drops (a bright head with a fading tail),
+   cut into narrow vertical stripes by a 90deg mask; two staggered layers falling
+   at different speeds/offsets read as rain rather than a moving grid. */
 .fx--matrix { background: #000; }
-.fx--matrix::before {
+.fx--matrix::before,
+.fx--matrix::after {
   content: "";
   position: absolute;
-  left: 0; right: 0; top: -100%; height: 200%;
-  background: repeating-linear-gradient(90deg, rgba(0, 255, 65, 0.6) 0 2px, transparent 2px 16px);
-  -webkit-mask: repeating-linear-gradient(180deg, #000 0 26px, transparent 26px 120px);
-  mask: repeating-linear-gradient(180deg, #000 0 26px, transparent 26px 120px);
+  left: 0; right: 0; top: -120%; height: 240%;
+  /* down each column: transparent tail -> green -> near-white head, repeated */
+  background: repeating-linear-gradient(180deg,
+    transparent 0 12%, rgba(0, 255, 65, 0.55) 24%, #b9ffce 29%, transparent 31%);
   filter: drop-shadow(0 0 3px #00ff41);
 }
+/* cut into narrow vertical columns; the two layers use offset column grids */
+.fx--matrix::before {
+  -webkit-mask: repeating-linear-gradient(90deg, #000 0 2px, transparent 2px 15px);
+          mask: repeating-linear-gradient(90deg, #000 0 2px, transparent 2px 15px);
+  background-size: 100% 90px;                 /* drop spacing for this layer */
+}
+.fx--matrix::after {
+  -webkit-mask: repeating-linear-gradient(90deg, transparent 0 8px, #000 8px 10px, transparent 10px 22px);
+          mask: repeating-linear-gradient(90deg, transparent 0 8px, #000 8px 10px, transparent 10px 22px);
+  background-size: 100% 130px;                /* different spacing -> not in lockstep */
+  opacity: 0.85;
+}
 .fx--matrix.is-playing { animation: fx-fade 0.6s ease forwards; }
-.fx--matrix.is-playing::before { animation: fx-rain 0.6s linear forwards; }
-@keyframes fx-rain { from { transform: translateY(-42%); } to { transform: translateY(42%); } }
+.fx--matrix.is-playing::before { animation: fx-rain-a 0.6s linear forwards; }
+.fx--matrix.is-playing::after  { animation: fx-rain-b 0.6s linear forwards; }
+@keyframes fx-rain-a { from { transform: translateY(-70%); } to { transform: translateY(70%); } }
+@keyframes fx-rain-b { from { transform: translateY(-100%); } to { transform: translateY(85%); } }
 
 /* 5 — 2001 Star Gate: light spokes warp out from the centre. */
 .fx--stargate { background: #000; }

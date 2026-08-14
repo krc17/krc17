@@ -85,15 +85,12 @@ board but cannot change it.
 
 ---
 
-## The area-coverage board
+## Weather & travel
 
-Swipe left on the TV, or tap **Coverage** in the bottom bar. Each engineer is a
-card; each area (Perimeter, HD JOE, Downtown, On-Call, Special project) is a
-column. **Press and hold a card, then drag it** to the area that person is
-covering today. It saves by itself and shows on every screen within a second.
-
-Prefer to edit a file? It is `coverage.yaml` in the dashboard's `data\coverage`
-folder, and it documents itself at the top.
+Tap **Travel** in the bottom bar. It shows today's outlook for the county,
+sunrise/sunset and tides, and **live drive times** to our sites — plus a running
+list of weather alerts and road incidents. A glance tells you whether to leave
+early for a remote-site trip or the commute.
 
 ---
 

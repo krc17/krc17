@@ -374,7 +374,11 @@ drive"** list that merges weather alerts with road incidents, worst first.
   semicolon-separated list of `Label = fromLat,fromLon > toLat,toLon` (grab
   coordinates from Google Maps). This uses the **same TomTom key**, which must
   also have the **Routing API** entitled (alongside Traffic). Leave it blank for
-  no drive-times panel.
+  no drive-times panel. Each route is one TomTom call per refresh, so they refresh
+  on their own `ROUTES_REFRESH_SECONDS` (default 5 min) to respect the key's daily
+  quota (see the note below). If a pull fails — e.g. the free-tier quota is spent
+  — the **last good times stay on screen, dimmed, with an "updated N min ago"**
+  stamp rather than going blank.
 - **Traffic** comes from **TomTom** and needs a free key: sign up at
   `developer.tomtom.com`, create a key, and **entitle it for the Traffic API and
   the Routing API** (Traffic powers the incident list, Routing powers the drive
@@ -395,8 +399,16 @@ drive"** list that merges weather alerts with road incidents, worst first.
 
 These fail soft like the news ticker: a dropped pull keeps the last good data on
 screen and marks itself stale rather than blanking. Weather refreshes every 15
-minutes, traffic and drive times every 3, tides every 30
-(`WEATHER_REFRESH_SECONDS` / `TRAFFIC_REFRESH_SECONDS` / `TIDE_REFRESH_SECONDS`).
+minutes, traffic incidents every 3, **drive times every 5**, tides every 30
+(`WEATHER_REFRESH_SECONDS` / `TRAFFIC_REFRESH_SECONDS` / `ROUTES_REFRESH_SECONDS`
+/ `TIDE_REFRESH_SECONDS`).
+
+> **TomTom quota.** Traffic incidents are one call per refresh, but drive times
+> are **one call per route** — so they dominate usage. With `R` routes that's
+> `R × 86400 ÷ ROUTES_REFRESH_SECONDS` calls/day. TomTom's free tier is
+> ~2,500/day: e.g. 6 routes at 300s ≈ 1,730/day (fine), but at 180s ≈ 2,880/day
+> (over — times go stale mid-day until the quota resets). Raise
+> `ROUTES_REFRESH_SECONDS` or trim routes if you exceed it.
 
 > The wall must be able to reach `api.weather.gov` and `api.tomtom.com` on your
 > network for this page to populate.

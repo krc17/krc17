@@ -88,6 +88,32 @@ def test_routing_not_configured_without_key_or_routes():
     assert R.RoutingService("", [{"name": "a", "from": "1,2", "to": "3,4"}]).snapshot["configured"] is False
 
 
+def test_routing_keeps_last_good_when_calls_fail(monkeypatch):
+    """When a route's live pull fails (e.g. TomTom quota), keep its last good
+    numbers flagged stale; a route that never succeeded shows an error row."""
+    import asyncio
+
+    svc = R.RoutingService("key", [
+        {"name": "A", "from": "1,2", "to": "3,4"},
+        {"name": "B", "from": "5,6", "to": "7,8"},
+    ])
+    svc._last["A"] = {"name": "A", "minutes": 30, "delay_min": 5, "free_min": 25,
+                      "km": 20.0, "as_of": "2026-08-14T12:00:00+00:00",
+                      "error": False, "stale": False}
+
+    async def boom(_client, _route):
+        raise RuntimeError("429 quota exceeded")
+    monkeypatch.setattr(svc, "_one", boom)
+
+    snapshot = asyncio.run(svc.refresh())
+    routes = {r["name"]: r for r in snapshot["routes"]}
+    assert routes["A"]["stale"] is True and routes["A"]["minutes"] == 30   # last good kept
+    assert routes["A"]["as_of"] == "2026-08-14T12:00:00+00:00"
+    assert routes["B"].get("error") is True                               # never had data
+    assert snapshot["configured"] is True
+    assert "unavailable" in (snapshot["error"] or "")
+
+
 def test_tide_parse():
     high = TD._tide({"t": "2026-08-07 13:15", "v": "5.234", "type": "H"})
     assert high["type"] == "High" and high["height"] == 5.2

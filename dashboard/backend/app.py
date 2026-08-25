@@ -100,7 +100,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         asyncio.create_task(_poll(agenda.refresh, settings.calendar_refresh_seconds, "agenda")),
         asyncio.create_task(_poll(weather.refresh, settings.weather_refresh_seconds, "weather")),
         asyncio.create_task(_poll(traffic.refresh, settings.traffic_refresh_seconds, "traffic")),
-        asyncio.create_task(_poll(routing.refresh, settings.traffic_refresh_seconds, "routes")),
+        asyncio.create_task(_poll(routing.refresh, settings.routes_refresh_seconds, "routes")),
         asyncio.create_task(_poll(tides.refresh, settings.tide_refresh_seconds, "tides")),
     ]
     log.info("dashboard ready - data dir %s", settings.data_dir)

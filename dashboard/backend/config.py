@@ -133,7 +133,11 @@ class Settings:
     traffic_refresh_seconds: int = 180
     # Named routes for live drive times, each {name, from "lat,lon", to "lat,lon"}.
     # Uses the same TomTom key (Routing API). Empty = no drive-times panel.
+    # Drive times have their own refresh (one TomTom call per route), separate
+    # from traffic incidents, so the two can be tuned to stay under the key's
+    # daily quota. With N routes that is N calls every routes_refresh_seconds.
     travel_routes: list[dict[str, str]] = field(default_factory=list)
+    routes_refresh_seconds: int = 300
     # NOAA tide station for the tide clock (free, no key). Charleston Harbor by
     # default. Blank = no tide panel.
     tide_station: str = "8665530"
@@ -172,6 +176,7 @@ def load_settings() -> Settings:
         traffic_bbox=os.getenv("TRAFFIC_BBOX", "-80.20,32.65,-79.75,33.03").strip(),
         traffic_refresh_seconds=_env_int("TRAFFIC_REFRESH_SECONDS", 180),
         travel_routes=_parse_routes("TRAVEL_ROUTES"),
+        routes_refresh_seconds=_env_int("ROUTES_REFRESH_SECONDS", 300),
         tide_station=os.getenv("TIDE_STATION", "8665530").strip(),
         tide_refresh_seconds=_env_int("TIDE_REFRESH_SECONDS", 1800),
     )

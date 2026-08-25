@@ -9,6 +9,7 @@
  */
 import { weatherIcon } from './weathericon.js';
 import { renderSky } from './skypanel.js';
+import { relativeTime } from './documents.js';
 
 export class TravelPage {
   constructor({ weatherBody, placeEl, skyBody, routesBody, driveBody, footEl }) {
@@ -135,11 +136,18 @@ export class TravelPage {
         continue;
       }
 
-      const band = delayBand(route.delay_min);
-      row.classList.add(`is-${band}`);
       const time = el('div', 'route-row__time');
       time.append(el('span', 'route-row__min', String(route.minutes)), el('span', 'route-row__unit', 'min'));
-      row.append(time, el('div', 'route-row__delay', delayText(route)));
+
+      if (route.stale) {
+        // Last-good numbers, dimmed, with when they were last fetched.
+        row.classList.add('is-stale');
+        row.append(time, el('div', 'route-row__delay route-row__stamp',
+          `updated ${relativeTime(route.as_of)}`));
+      } else {
+        row.classList.add(`is-${delayBand(route.delay_min)}`);
+        row.append(time, el('div', 'route-row__delay', delayText(route)));
+      }
       list.append(row);
     }
     body.replaceChildren(list);

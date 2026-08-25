@@ -2528,6 +2528,10 @@ body.is-card-dragging .pages { overflow-x: hidden; }
 .route-row.is-heavy { border-left-color: #d1495b; }
 .route-row.is-heavy .route-row__delay { color: #e06b7b; }
 .route-row__time--muted { color: var(--muted); }
+/* Stale: last-good numbers kept on screen, dimmed, with an "updated …" stamp
+   (a live pull failed — e.g. the TomTom quota — so we don't blank the times). */
+.route-row.is-stale { opacity: 0.5; border-left-color: var(--muted); }
+.route-row__stamp { font-weight: 600; font-size: 0.72rem; color: var(--muted); font-variant-numeric: normal; }
 .routes__hint { color: var(--muted); font-size: 0.85rem; padding: 0.4rem 0 0.7rem; }
 
 /* Travel page "sky" fill: daylight arc, moon phase, tides (skypanel.js). */

@@ -43,6 +43,7 @@ class RoutingService:
     def __init__(self, api_key: str, routes: list[dict[str, str]]) -> None:
         self._key = api_key.strip()
         self._routes = routes
+        self._last: dict[str, dict[str, Any]] = {}   # last good result per route name
         self._cache = RoutingCache(configured=bool(self._key and self._routes))
 
     @property
@@ -62,20 +63,25 @@ class RoutingService:
                     *(self._one(client, route) for route in self._routes),
                     return_exceptions=True,
                 )
-        except Exception as exc:
+        except Exception as exc:                       # couldn't even start — all fail
             log.warning("routing refresh failed: %s", exc)
-            self._cache.configured = True
-            self._cache.error = "Drive times unavailable"   # keep last good on screen
-            return self.snapshot
+            results = [exc] * len(self._routes)
 
         routes: list[dict[str, Any]] = []
         failures = 0
         for route, result in zip(self._routes, results):
+            name = route["name"]
             if isinstance(result, BaseException):
-                log.warning("route %s failed: %s", route["name"], result)
+                log.warning("route %s failed: %s", name, result)
                 failures += 1
-                routes.append({"name": route["name"], "error": True})   # keep the row, mark it
+                if name in self._last:
+                    # Keep the last good numbers on the wall, flagged stale so the
+                    # UI can dim them and show when they were last updated.
+                    routes.append({**self._last[name], "stale": True})
+                else:
+                    routes.append({"name": name, "error": True})   # never had data
             else:
+                self._last[name] = result                          # remember last good
                 routes.append(result)
 
         # Keep configured order (a reordering list on a wall is confusing); the
@@ -107,5 +113,7 @@ class RoutingService:
             "delay_min": round(delay / 60),
             "free_min": round(free / 60),
             "km": round(int(summary.get("lengthInMeters") or 0) / 1000, 1),
+            "as_of": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "error": False,
+            "stale": False,
         }
